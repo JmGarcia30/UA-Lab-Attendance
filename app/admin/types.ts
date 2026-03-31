@@ -2,6 +2,7 @@ export interface Student {
   student_id: string;
   first_name: string;
   last_name: string;
+  public_key: string;
 }
 
 export interface Schedule {

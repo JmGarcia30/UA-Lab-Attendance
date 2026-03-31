@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { get, set } from "idb-keyval";
-import { getAdminData, resetStudentDevice, registerAdminToDatabase, verifyAdminSignature } from "../actions";
+import { getAdminData, resetStudentDevice, loginAdmin, registerAdmin } from "../actions";
 import { AttendanceLog, Student, Schedule } from "./types";
 import AttendanceTab from "./components/AttendanceTab";
 import SchedulesTab from "./components/SchedulesTab";
@@ -10,10 +9,10 @@ import DevicesTab from "./components/DevicesTab";
 
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [hasAdminKey, setHasAdminKey] = useState<boolean>(false);
+  const [isRegistering, setIsRegistering] = useState<boolean>(false);
   
   const [adminId, setAdminId] = useState<string>("");
-  const [setupCode, setSetupCode] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
   
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -21,16 +20,9 @@ export default function AdminDashboard() {
   
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>("");
+  const [messageType, setMessageType] = useState<"error" | "success">("error");
 
   const [activeTab, setActiveTab] = useState<"attendance" | "schedules" | "devices">("attendance");
-
-  useEffect(() => {
-    async function checkVault() {
-      const key = await get("admin_private_key");
-      if (key) setHasAdminKey(true);
-    }
-    checkVault();
-  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -47,70 +39,37 @@ export default function AdminDashboard() {
     }
   }
 
-  async function handleAdminSetup(e: React.FormEvent) {
+  async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
     setIsLoading(true);
     setMessage("");
 
     try {
-      const keyPair = await window.crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, false, ["sign", "verify"]);
-      await set("admin_private_key", keyPair.privateKey);
-      await set("admin_id", adminId);
-
-      const exportedPublicKey = await window.crypto.subtle.exportKey("spki", keyPair.publicKey);
-      const publicKeyArray = Array.from(new Uint8Array(exportedPublicKey));
-      const publicKeyBase64 = btoa(String.fromCharCode(...publicKeyArray));
-
-      const response = await registerAdminToDatabase({ adminId, publicKey: publicKeyBase64, setupCode });
-
-      if (response.success) {
-        setHasAdminKey(true);
-        setMessage("Administrator device successfully registered.");
+      if (isRegistering) {
+        // Now only sending adminId and password
+        const response = await registerAdmin(adminId, password);
+        if (response.success) {
+          setMessageType("success");
+          setMessage("Registration successful! You can now log in.");
+          setIsRegistering(false); 
+          setPassword(""); 
+        } else {
+          setMessageType("error");
+          setMessage(response.message);
+        }
       } else {
-        setMessage(response.message);
+        const response = await loginAdmin(adminId, password);
+        if (response.success) {
+          setIsAuthenticated(true);
+        } else {
+          setMessageType("error");
+          setMessage(response.message);
+        }
       }
     } catch (error) {
       console.error(error);
-      setMessage("Failed to generate cryptographic keys.");
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  async function handleSecureLogin() {
-    setIsLoading(true);
-    setMessage("");
-
-    try {
-      const storedAdminId = await get("admin_id");
-      const privateKey = await get("admin_private_key");
-
-      if (!storedAdminId || !privateKey) {
-        setMessage("Security credentials missing from device.");
-        setIsLoading(false);
-        return;
-      }
-
-      const timestamp = new Date().toISOString();
-      const messageToSign = `ADMIN-LOGIN-${storedAdminId}-${timestamp}`;
-
-      const encoder = new TextEncoder();
-      const encodedMessage = encoder.encode(messageToSign);
-      const rawSignature = await window.crypto.subtle.sign({ name: "ECDSA", hash: { name: "SHA-256" } }, privateKey, encodedMessage);
-
-      const signatureArray = Array.from(new Uint8Array(rawSignature));
-      const signatureBase64 = btoa(String.fromCharCode(...signatureArray));
-
-      const response = await verifyAdminSignature({ adminId: storedAdminId as string, timestamp, signature: signatureBase64 });
-
-      if (response.success) {
-        setIsAuthenticated(true);
-      } else {
-        setMessage(response.message);
-      }
-    } catch (error) {
-      console.error(error);
-      setMessage("Cryptographic verification failed.");
+      setMessageType("error");
+      setMessage("An unexpected error occurred.");
     } finally {
       setIsLoading(false);
     }
@@ -130,45 +89,69 @@ export default function AdminDashboard() {
     }
   }
 
-  if (!hasAdminKey) {
-    return (
-      <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="bg-white p-10 rounded-xl shadow-lg border border-slate-200 w-full max-w-lg relative">
-          <a href="/" className="absolute top-8 left-8 text-sm font-medium text-slate-400 hover:text-slate-800 transition-colors">Back to Home</a>
-          <div className="text-center mb-8 mt-6">
-            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">System Setup</h2>
-            <p className="text-slate-500 text-sm mt-2">Initialize administrator cryptographic credentials.</p>
-          </div>
-          <form onSubmit={handleAdminSetup} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Administrator ID</label>
-              <input type="text" placeholder="Enter your system identifier" className="w-full px-4 py-3 rounded-md bg-slate-50 border border-slate-300 outline-none" value={adminId} onChange={(e) => setAdminId(e.target.value)} required />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Authorization Code</label>
-              <input type="password" placeholder="Enter master setup code" className="w-full px-4 py-3 rounded-md bg-slate-50 border border-slate-300 outline-none" value={setupCode} onChange={(e) => setSetupCode(e.target.value)} required />
-            </div>
-            <button type="submit" disabled={isLoading} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-md mt-4">{isLoading ? "Generating Secure Keys..." : "Authorize Device"}</button>
-          </form>
-          {message && <p className="mt-6 text-center text-rose-600 text-sm font-medium">{message}</p>}
-        </div>
-      </main>
-    );
-  }
-
   if (!isAuthenticated) {
     return (
       <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="bg-white p-10 rounded-xl shadow-lg border border-slate-200 w-full max-w-md text-center relative">
+        <div className="bg-white p-10 rounded-xl shadow-lg border border-slate-200 w-full max-w-md relative">
           <a href="/" className="absolute top-8 left-8 text-sm font-medium text-slate-400 hover:text-slate-800 transition-colors">Back to Home</a>
-          <div className="mb-8 mt-6">
-            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Admin Authentication</h2>
-            <p className="text-slate-500 text-sm mt-2">Device verified. Digital signature required for access.</p>
+          
+          <div className="text-center mb-8 mt-6">
+            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
+              {isRegistering ? "Register Admin" : "Admin Login"}
+            </h2>
+            <p className="text-slate-500 text-sm mt-2">
+              {isRegistering ? "Create a new administrator account." : "Enter your credentials to access the dashboard."}
+            </p>
           </div>
-          <button onClick={handleSecureLogin} disabled={isLoading} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 px-4 rounded-md transition-colors shadow-md">
-            {isLoading ? "Verifying Signature..." : "Unlock System"}
-          </button>
-          {message && <p className="mt-6 text-rose-600 text-sm font-medium">{message}</p>}
+
+          <form onSubmit={handleAuth} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Admin ID</label>
+              <input 
+                type="text" 
+                placeholder="e.g. admin-01" 
+                className="w-full px-4 py-3 rounded-md bg-slate-50 border border-slate-300 outline-none focus:border-slate-500 focus:bg-white transition-colors" 
+                value={adminId} 
+                onChange={(e) => setAdminId(e.target.value)} 
+                required 
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+              <input 
+                type="password" 
+                placeholder="Enter password" 
+                className="w-full px-4 py-3 rounded-md bg-slate-50 border border-slate-300 outline-none focus:border-slate-500 focus:bg-white transition-colors" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                required 
+              />
+            </div>
+
+            <button type="submit" disabled={isLoading} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-md mt-4 transition-colors">
+              {isLoading ? "Processing..." : isRegistering ? "Create Account" : "Secure Login"}
+            </button>
+          </form>
+
+          {message && (
+            <p className={`mt-6 text-center text-sm font-medium ${messageType === 'error' ? 'text-rose-600' : 'text-emerald-600'}`}>
+              {message}
+            </p>
+          )}
+
+          <div className="mt-8 text-center border-t border-slate-100 pt-6">
+            <button 
+              onClick={() => {
+                setIsRegistering(!isRegistering);
+                setMessage("");
+              }} 
+              className="text-sm text-slate-500 hover:text-slate-800 font-medium transition-colors"
+            >
+              {isRegistering ? "Already have an account? Log in here." : "Need an admin account? Register here."}
+            </button>
+          </div>
+
         </div>
       </main>
     );
@@ -180,9 +163,17 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto flex justify-between items-end">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Administrator Control Panel</h1>
-            <p className="text-slate-500 text-sm mt-1">Secured via ECDSA P-256</p>
+            <p className="text-slate-500 text-sm mt-1">Logged in as: <span className="font-semibold">{adminId}</span></p>
           </div>
-          <button onClick={() => setIsAuthenticated(false)} className="text-sm bg-slate-100 text-slate-700 font-medium px-4 py-2 rounded-md hover:bg-slate-200 transition-colors">Lock Session</button>
+          <button 
+            onClick={() => {
+              setIsAuthenticated(false);
+              setPassword(""); 
+            }} 
+            className="text-sm bg-slate-100 text-slate-700 font-medium px-4 py-2 rounded-md hover:bg-slate-200 transition-colors"
+          >
+            Log Out
+          </button>
         </div>
         <div className="max-w-7xl mx-auto mt-8 flex space-x-8">
           <button onClick={() => setActiveTab("attendance")} className={`pb-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === "attendance" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Attendance Records</button>

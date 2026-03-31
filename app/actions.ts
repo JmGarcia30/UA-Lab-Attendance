@@ -360,85 +360,52 @@ export async function resetStudentDevice(studentId: string) {
   }
 }
 
-export async function registerAdminToDatabase(data: {
-  adminId: string;
-  publicKey: string;
-  setupCode: string;
-}) {
+export async function registerAdmin(adminId: string, password: string) {
   try {
-    // Check against the secure environment variable
-    if (data.setupCode !== process.env.ADMIN_SETUP_SECRET) {
-      return { success: false, message: "Invalid setup authorization code." };
+    const existingAdmin = await prisma.admin.findUnique({
+      where: { admin_id: adminId },
+    });
+
+    if (existingAdmin) {
+      return { success: false, message: "This Admin ID is already registered." };
     }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
     await prisma.admin.create({
       data: {
-        admin_id: data.adminId,
-        public_key: data.publicKey,
+        admin_id: adminId,
+        password: hashedPassword,
       },
     });
-    return { success: true, message: "Admin device securely registered." };
+
+    return { success: true, message: "Admin account successfully created!" };
   } catch (error) {
-    const err = error as { code?: string };
-    if (err.code === "P2002") {
-      return {
-        success: false,
-        message: "This Admin ID is already registered.",
-      };
-    }
-    console.error(error);
-    return { success: false, message: "Failed to connect to the database." };
+    console.error("Admin registration error:", error);
+    return { success: false, message: "Server error during registration." };
   }
 }
 
-export async function verifyAdminSignature(data: {
-  adminId: string;
-  timestamp: string;
-  signature: string;
-}) {
+export async function loginAdmin(adminId: string, password: string) {
   try {
     const admin = await prisma.admin.findUnique({
-      where: { admin_id: data.adminId },
+      where: { admin_id: adminId },
     });
 
     if (!admin) {
-      return { success: false, message: "Admin profile not found." };
+      return { success: false, message: "Invalid Admin ID or password." };
     }
 
-    const publicKeyArray = Uint8Array.from(atob(admin.public_key), (c) =>
-      c.charCodeAt(0),
-    );
-    const importedPublicKey = await globalThis.crypto.subtle.importKey(
-      "spki",
-      publicKeyArray,
-      { name: "ECDSA", namedCurve: "P-256" },
-      true,
-      ["verify"],
-    );
+    const isMatch = await bcrypt.compare(password, admin.password);
 
-    const signedMessage = `ADMIN-LOGIN-${data.adminId}-${data.timestamp}`;
-    const encoder = new TextEncoder();
-    const messageData = encoder.encode(signedMessage);
-    const signatureArray = Uint8Array.from(atob(data.signature), (c) =>
-      c.charCodeAt(0),
-    );
+    if (!isMatch) {
+      return { success: false, message: "Invalid Admin ID or password." };
+    }
 
-    const isValid = await globalThis.crypto.subtle.verify(
-      { name: "ECDSA", hash: { name: "SHA-256" } },
-      importedPublicKey,
-      signatureArray,
-      messageData,
-    );
-
-    if (!isValid)
-      return {
-        success: false,
-        message: "Security Error: Invalid admin signature.",
-      };
-
-    return { success: true, message: "Admin identity verified." };
+    return { success: true, message: "Login successful." };
   } catch (error) {
-    console.error(error);
+    console.error("Admin login error:", error);
     return { success: false, message: "Server error during verification." };
   }
 }

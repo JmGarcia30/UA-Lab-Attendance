@@ -8,9 +8,8 @@ datasource db {
 }
 
 model Admin {
-  id         Int      @id @default(autoincrement())
-  admin_id   String   @unique
-  public_key String   @db.Text
+  admin_id   String   @id
+  password   String   @db.Text
 }
 
 model Student {
