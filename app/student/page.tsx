@@ -11,9 +11,10 @@ import {
 } from "../actions";
 
 export default function SmartStudentPortal() {
-  const [view, setView] = useState<
-    "loading" | "register" | "attendance" | "recovery"
-  >("loading");
+  // =========================================================================
+  // 100% UNCHANGED LOGIC & STATE
+  // =========================================================================
+  const [view, setView] = useState<"loading" | "register" | "attendance" | "recovery">("loading");
 
   const [studentId, setStudentId] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -29,6 +30,9 @@ export default function SmartStudentPortal() {
   const [isError, setIsError] = useState(false);
   const [isNameLocked, setIsNameLocked] = useState(false);
 
+  // NEW: State for Philippine Time
+  const [philippineTime, setPhilippineTime] = useState("");
+
   useEffect(() => {
     async function initialize() {
       const privateKey = await get("student_private_key");
@@ -42,6 +46,33 @@ export default function SmartStudentPortal() {
     initialize();
   }, []);
 
+  // NEW: Your Exact Time Tracker Hook (with fixed backticks)
+  useEffect(() => {
+    function updatePhilippineTime() {
+      const now = new Date();
+      const datePart = new Intl.DateTimeFormat("en-PH", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "Asia/Manila",
+      }).format(now);
+
+      const timePart = new Intl.DateTimeFormat("en-PH", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Manila",
+      }).format(now);
+
+      setPhilippineTime(`${datePart} • ${timePart}`);
+    }
+
+    updatePhilippineTime();
+    const interval = setInterval(updatePhilippineTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   async function fetchRooms() {
     const response = await getLabRooms();
     if (response.success) {
@@ -50,7 +81,6 @@ export default function SmartStudentPortal() {
   }
 
   async function handleIdCheck(forcedId?: string) {
-    // Use the forcedId if provided, otherwise use the state studentId
     const idToSearch = typeof forcedId === "string" ? forcedId : studentId;
 
     if (idToSearch.length >= 4) {
@@ -58,13 +88,11 @@ export default function SmartStudentPortal() {
       if (response.isRevoked) {
         setFirstName(response.firstName || "");
         setLastName(response.lastName || "");
-        setIsNameLocked(true); // Lock the fields
-        setMessage(
-          "Account found. Please enter a new PIN to register this device.",
-        );
+        setIsNameLocked(true); 
+        setMessage("Account found. Please enter a new PIN to register this device.");
         setIsError(false);
       } else {
-        setIsNameLocked(false); // Unlock for new users
+        setIsNameLocked(false); 
       }
     }
   }
@@ -88,10 +116,7 @@ export default function SmartStudentPortal() {
         false,
         ["sign", "verify"],
       );
-      const exportedPublicKey = await window.crypto.subtle.exportKey(
-        "spki",
-        keyPair.publicKey,
-      );
+      const exportedPublicKey = await window.crypto.subtle.exportKey("spki", keyPair.publicKey);
       const publicKeyArray = Array.from(new Uint8Array(exportedPublicKey));
       const publicKeyBase64 = btoa(String.fromCharCode(...publicKeyArray));
 
@@ -120,9 +145,7 @@ export default function SmartStudentPortal() {
     } catch (error) {
       console.error(error);
       setIsError(true);
-      setMessage(
-        "Server Error: Database connection failed. Keys were NOT saved.",
-      );
+      setMessage("Server Error: Database connection failed. Keys were NOT saved.");
     } finally {
       setIsRegistering(false);
     }
@@ -181,9 +204,7 @@ export default function SmartStudentPortal() {
           setTimeout(() => {
             setView("register");
             setIsError(false);
-            setMessage(
-              "Security key mismatch detected. Please register this device again.",
-            );
+            setMessage("Security key mismatch detected. Please register this device again.");
           }, 2500);
         }
       }
@@ -207,15 +228,11 @@ export default function SmartStudentPortal() {
 
       if (response.success) {
         setMessage(response.message);
-
-        // 1. Fetch the identity and lock the fields immediately BEFORE the screen changes
         await handleIdCheck(studentId);
 
         setTimeout(() => {
           setMessage("");
-          // 2. We deliberately DO NOT clear the studentId here so it stays in the box
           setRecoveryPin("");
-          // 3. Switch back to the register screen
           setView("register");
         }, 2000);
       } else {
@@ -232,211 +249,279 @@ export default function SmartStudentPortal() {
 
   if (view === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        Checking device security...
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center font-bold text-[#011B51] font-sans">
+        <div className="flex flex-col items-center animate-pulse">
+          <div className="w-12 h-12 border-4 border-[#011B51] border-t-[#FED702] rounded-full animate-spin mb-4"></div>
+          Authenticating Security Keys...
+        </div>
       </div>
     );
   }
 
+  // =========================================================================
+  // FULLY RESPONSIVE UI
+  // =========================================================================
   return (
-    <main className="min-h-screen flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-8 border border-gray-100 relative">
-        <a
-          href="/"
-          className="absolute top-6 left-6 text-sm text-gray-400 hover:text-blue-600 transition-colors"
-        >
-          &larr; Home
+    <main className="min-h-screen w-full flex flex-col lg:flex-row bg-white font-sans">
+      
+      {/* ================================================================ */}
+      {/* LEFT PANEL: BRANDING (Compact on Mobile, 40% on Desktop) */}
+      {/* ================================================================ */}
+      <div className="relative w-full lg:w-[40%] min-h-[25vh] sm:min-h-[30vh] lg:min-h-screen bg-[#011B51] flex flex-col justify-center lg:justify-between p-6 sm:p-10 lg:p-14 overflow-hidden shadow-md lg:shadow-2xl z-10 border-b-4 lg:border-b-0 lg:border-r-4 border-[#FED702] shrink-0">
+        
+        {/* BACKGROUND IMAGE WRAPPER */}
+        <div className="absolute inset-0 z-0 bg-[#011B51]">
+          <img 
+            src="/lab-background.jpg" 
+            alt="University of the Assumption" 
+            className="w-full h-full object-cover opacity-80"
+          />
+          <div className="absolute inset-0 bg-[#011B51]/60"></div>
+        </div>
+
+        {/* Text Overlay */}
+        <div className="relative z-10 flex flex-col h-full">
+          <div className="flex flex-row lg:flex-col items-center lg:items-start space-x-4 lg:space-x-0">
+            {/* Logo shrinks on mobile, grows on desktop */}
+            <img src="/ua-logo.png" alt="UA Logo" className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 object-contain lg:mb-8 drop-shadow-xl shrink-0" />
+            
+            {/* Title scales down dynamically */}
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl xl:text-7xl font-black text-white tracking-tight leading-tight uppercase drop-shadow-2xl">
+              Student <br className="hidden lg:block"/>
+              <span className="text-[#FED702]">Lab Attendance</span><br className="hidden lg:block"/>
+              <span className="lg:hidden"> System</span>
+              <span className="hidden lg:block">System</span>
+            </h1>
+          </div>
+          
+          {/* Paragraph is completely hidden on mobile to save space, shows only on large screens */}
+          <div className="hidden lg:block mt-auto pt-12">
+            <p className="text-white/90 text-base lg:text-lg leading-relaxed font-medium drop-shadow-lg max-w-md">
+              Every school needs a good system to track student attendance. Logging each entry by hand is time-consuming and prone to errors. Use this secure interface to register your device and log lab sessions effortlessly.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ================================================================ */}
+      {/* RIGHT PANEL: FORMS (Takes remaining space on mobile, 60% on Desktop) */}
+      {/* ================================================================ */}
+      <div className="w-full lg:w-[60%] flex-1 flex items-center justify-center p-6 sm:p-10 lg:p-16 bg-white relative">
+        
+        <a href="/" className="absolute top-4 right-6 lg:top-8 lg:right-10 text-xs font-bold text-slate-400 hover:text-[#011B51] transition-colors uppercase tracking-wider">
+          &larr; Portal
         </a>
 
-        {view === "register" && (
-          <div className="animate-in fade-in duration-300">
-            <div className="text-center mb-8 mt-4">
-              <h2 className="text-2xl font-bold text-gray-800">
-                Register Device
-              </h2>
-              <p className="text-gray-500 mt-2 text-sm">
-                One-time setup for ECC attendance tracking.
-              </p>
-            </div>
-            <form onSubmit={handleRegister} className="space-y-4">
-              <input
-                type="text"
-                placeholder="Student ID"
-                className={`w-full px-4 py-3 rounded-lg border outline-none ${isNameLocked ? "bg-gray-200 text-gray-500 cursor-not-allowed border-transparent" : "bg-gray-50 border-gray-200"}`}
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-                onBlur={() => handleIdCheck()}
-                disabled={isNameLocked}
-                required
-              />
-              <input
-                type="text"
-                placeholder="First Name"
-                className={`w-full px-4 py-3 rounded-lg border outline-none ${isNameLocked ? "bg-gray-200 text-gray-500 cursor-not-allowed border-transparent" : "bg-gray-50 border-gray-200"}`}
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                disabled={isNameLocked}
-                required
-              />
-              <input
-                type="text"
-                placeholder="Last Name"
-                className={`w-full px-4 py-3 rounded-lg border outline-none ${isNameLocked ? "bg-gray-200 text-gray-500 cursor-not-allowed border-transparent" : "bg-gray-50 border-gray-200"}`}
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                disabled={isNameLocked}
-                required
-              />
-              <input
-                type="password"
-                placeholder="Create 4-Digit Recovery PIN"
-                maxLength={4}
-                pattern="\d{4}"
-                title="Must be exactly 4 numbers"
-                className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 outline-none"
-                value={recoveryPin}
-                onChange={(e) => setRecoveryPin(e.target.value)}
-                required
-              />
+        {/* Form container */}
+        <div className="w-full max-w-lg mt-6 lg:mt-0">
+          
+          {/* VIEW: REGISTER */}
+          {view === "register" && (
+            <div className="animate-in fade-in duration-500">
+              <div className="mb-8 lg:mb-10 text-center lg:text-left">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#011B51] uppercase tracking-tight">Register Device</h2>
+                <div className="w-12 lg:w-16 h-1 lg:h-1.5 bg-[#FED702] mt-3 lg:mt-4 mb-2 lg:mb-3 rounded-full mx-auto lg:mx-0"></div>
+                <p className="text-slate-500 text-xs sm:text-sm font-semibold uppercase tracking-wide">One-time setup for ECC tracking.</p>
+              </div>
 
-              <button
-                type="submit"
-                disabled={isRegistering}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg mt-2"
-              >
-                {isRegistering ? "Registering..." : "Register Device"}
-              </button>
-            </form>
+              <form onSubmit={handleRegister} className="space-y-4 lg:space-y-6">
+                <div>
+                  <label className="block text-[10px] sm:text-xs font-bold text-[#011B51] uppercase tracking-wide mb-1.5 lg:mb-2 ml-1">Student ID</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 2024-1234"
+                    className={`w-full px-4 lg:px-5 py-3.5 lg:py-4 rounded-xl border outline-none text-sm sm:text-base font-medium transition-all shadow-sm ${isNameLocked ? "bg-slate-100 text-slate-500 cursor-not-allowed border-transparent shadow-none" : "bg-slate-50 border-slate-200 focus:bg-white focus:border-[#011B51] focus:ring-2 focus:ring-[#011B51]/20"}`}
+                    value={studentId}
+                    onChange={(e) => setStudentId(e.target.value)}
+                    onBlur={() => handleIdCheck()}
+                    disabled={isNameLocked}
+                    required
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
+                  <div>
+                    <label className="block text-[10px] sm:text-xs font-bold text-[#011B51] uppercase tracking-wide mb-1.5 lg:mb-2 ml-1">First Name</label>
+                    <input
+                      type="text"
+                      placeholder="Jane"
+                      className={`w-full px-4 lg:px-5 py-3.5 lg:py-4 rounded-xl border outline-none text-sm sm:text-base font-medium transition-all shadow-sm ${isNameLocked ? "bg-slate-100 text-slate-500 cursor-not-allowed border-transparent shadow-none" : "bg-slate-50 border-slate-200 focus:bg-white focus:border-[#011B51] focus:ring-2 focus:ring-[#011B51]/20"}`}
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      disabled={isNameLocked}
+                      required
+                    />
+                  </div>
 
-            {isNameLocked && (
-              <div className="text-center mt-2">
+                  <div>
+                    <label className="block text-[10px] sm:text-xs font-bold text-[#011B51] uppercase tracking-wide mb-1.5 lg:mb-2 ml-1">Last Name</label>
+                    <input
+                      type="text"
+                      placeholder="Doe"
+                      className={`w-full px-4 lg:px-5 py-3.5 lg:py-4 rounded-xl border outline-none text-sm sm:text-base font-medium transition-all shadow-sm ${isNameLocked ? "bg-slate-100 text-slate-500 cursor-not-allowed border-transparent shadow-none" : "bg-slate-50 border-slate-200 focus:bg-white focus:border-[#011B51] focus:ring-2 focus:ring-[#011B51]/20"}`}
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      disabled={isNameLocked}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] sm:text-xs font-bold text-[#011B51] uppercase tracking-wide mb-1.5 lg:mb-2 ml-1">Security PIN</label>
+                  <input
+                    type="password"
+                    placeholder="Create a 4-Digit PIN"
+                    maxLength={4}
+                    pattern="\d{4}"
+                    title="Must be exactly 4 numbers"
+                    className="w-full px-4 lg:px-5 py-3.5 lg:py-4 rounded-xl bg-slate-50 border border-slate-200 outline-none text-sm sm:text-base font-medium focus:bg-white focus:border-[#011B51] focus:ring-2 focus:ring-[#011B51]/20 transition-all tracking-[0.3em] shadow-sm"
+                    value={recoveryPin}
+                    onChange={(e) => setRecoveryPin(e.target.value)}
+                    required
+                  />
+                </div>
+
                 <button
-                  type="button"
-                  onClick={() => {
-                    setIsNameLocked(false);
-                    setStudentId("");
-                    setFirstName("");
-                    setLastName("");
-                    setMessage("");
-                  }}
-                  className="text-xs text-gray-400 hover:text-blue-600 underline"
+                  type="submit"
+                  disabled={isRegistering}
+                  className="w-full bg-[#011B51] hover:bg-[#022a7a] text-white font-bold py-3.5 lg:py-4 rounded-xl mt-6 lg:mt-8 transition-all shadow-md hover:shadow-lg lg:hover:-translate-y-0.5 border-b-4 border-[#A51A21] disabled:opacity-70 disabled:border-[#011B51] disabled:transform-none text-xs sm:text-sm uppercase tracking-wider"
                 >
-                  Not your account? Clear and try again
+                  {isRegistering ? "Registering Device..." : "Register Device"}
+                </button>
+              </form>
+
+              {isNameLocked && (
+                <div className="text-center mt-4 lg:mt-5">
+                  <button type="button" onClick={() => { setIsNameLocked(false); setStudentId(""); setFirstName(""); setLastName(""); setMessage(""); }} className="text-xs sm:text-sm font-bold text-slate-400 hover:text-[#011B51] uppercase tracking-wide transition-colors">
+                    Not your account? Clear and try again
+                  </button>
+                </div>
+              )}
+
+              <div className="mt-8 lg:mt-12 text-center border-t border-slate-100 pt-6 lg:pt-8">
+                <button onClick={() => { setView("recovery"); setMessage(""); setIsError(false); }} className="text-xs sm:text-sm font-bold text-slate-400 hover:text-[#A51A21] uppercase tracking-wide transition-colors">
+                  Lost your device? <span className="underline underline-offset-4 decoration-2">Recover account</span>
                 </button>
               </div>
-            )}
-
-            <div className="mt-6 text-center">
-              <button
-                onClick={() => {
-                  setView("recovery");
-                  setMessage("");
-                  setIsError(false);
-                }}
-                className="text-sm text-blue-600 hover:underline font-medium"
-              >
-                Lost your device? Recover account
-              </button>
             </div>
-          </div>
-        )}
+          )}
 
-        {view === "recovery" && (
-          <div className="animate-in fade-in duration-300">
-            <div className="text-center mb-8 mt-4">
-              <h2 className="text-2xl font-bold text-gray-800">
-                Device Recovery
-              </h2>
-              <p className="text-gray-500 mt-2 text-sm">
-                Enter your PIN to revoke your old device.
-              </p>
+          {/* VIEW: RECOVERY */}
+          {view === "recovery" && (
+            <div className="animate-in fade-in duration-500">
+              <div className="mb-8 lg:mb-10 text-center lg:text-left">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#011B51] uppercase tracking-tight">Device Recovery</h2>
+                <div className="w-12 lg:w-16 h-1 lg:h-1.5 bg-[#A51A21] mt-3 lg:mt-4 mb-2 lg:mb-3 rounded-full mx-auto lg:mx-0"></div>
+                <p className="text-slate-500 text-xs sm:text-sm font-semibold uppercase tracking-wide">Revoke your old device access safely.</p>
+              </div>
+
+              <form onSubmit={handleRecovery} className="space-y-4 lg:space-y-6">
+                <div>
+                  <label className="block text-[10px] sm:text-xs font-bold text-[#011B51] uppercase tracking-wide mb-1.5 lg:mb-2 ml-1">Student ID</label>
+                  <input
+                    type="text"
+                    placeholder="Enter Student ID"
+                    className="w-full px-4 lg:px-5 py-3.5 lg:py-4 rounded-xl bg-slate-50 border border-slate-200 outline-none text-sm sm:text-base font-medium focus:bg-white focus:border-[#011B51] focus:ring-2 focus:ring-[#011B51]/20 transition-all shadow-sm"
+                    value={studentId}
+                    onChange={(e) => setStudentId(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] sm:text-xs font-bold text-[#011B51] uppercase tracking-wide mb-1.5 lg:mb-2 ml-1">Security PIN</label>
+                  <input
+                    type="password"
+                    placeholder="Enter 4-Digit PIN"
+                    maxLength={4}
+                    className="w-full px-4 lg:px-5 py-3.5 lg:py-4 rounded-xl bg-slate-50 border border-slate-200 outline-none text-sm sm:text-base font-medium focus:bg-white focus:border-[#011B51] focus:ring-2 focus:ring-[#011B51]/20 transition-all tracking-[0.3em] shadow-sm"
+                    value={recoveryPin}
+                    onChange={(e) => setRecoveryPin(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isRegistering}
+                  className="w-full bg-[#A51A21] hover:bg-[#851319] text-white font-bold py-3.5 lg:py-4 rounded-xl mt-6 lg:mt-8 transition-all shadow-md hover:shadow-lg lg:hover:-translate-y-0.5 border-b-4 border-[#610a10] disabled:opacity-70 disabled:border-[#A51A21] disabled:transform-none text-xs sm:text-sm uppercase tracking-wider"
+                >
+                  {isRegistering ? "Processing Request..." : "Revoke Old Device"}
+                </button>
+              </form>
+
+              <div className="mt-8 lg:mt-12 text-center border-t border-slate-100 pt-6 lg:pt-8">
+                <button onClick={() => { setView("register"); setMessage(""); setIsError(false); }} className="text-xs sm:text-sm font-bold text-slate-400 hover:text-[#011B51] uppercase tracking-wide transition-colors">
+                  &larr; Back to Registration
+                </button>
+              </div>
             </div>
-            <form onSubmit={handleRecovery} className="space-y-4">
-              <input
-                type="text"
-                placeholder="Student ID"
-                className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 outline-none"
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-                required
-              />
-              <input
-                type="password"
-                placeholder="4-Digit Recovery PIN"
-                maxLength={4}
-                className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 outline-none"
-                value={recoveryPin}
-                onChange={(e) => setRecoveryPin(e.target.value)}
-                required
-              />
+          )}
 
-              <button
-                type="submit"
-                disabled={isRegistering}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg mt-2"
-              >
-                {isRegistering ? "Processing..." : "Revoke Old Device"}
-              </button>
-            </form>
-            <div className="mt-6 text-center">
-              <button
-                onClick={() => {
-                  setView("register");
-                  setMessage("");
-                  setIsError(false);
-                }}
-                className="text-sm text-gray-500 hover:underline font-medium"
-              >
-                Back to Registration
-              </button>
+          {/* VIEW: ATTENDANCE LOGGING */}
+          {view === "attendance" && (
+            <div className="animate-in fade-in duration-500">
+              <div className="mb-8 lg:mb-10 text-center lg:text-left">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#011B51] uppercase tracking-tight">Log Attendance</h2>
+                <div className="w-12 lg:w-16 h-1 lg:h-1.5 bg-[#FED702] mt-3 lg:mt-4 mb-2 lg:mb-3 rounded-full mx-auto lg:mx-0"></div>
+                <p className="text-slate-500 text-xs sm:text-sm font-semibold uppercase tracking-wide">Select your current facility.</p>
+              </div>
+
+              <form onSubmit={handleLogAttendance} className="space-y-4 lg:space-y-6">
+                
+                {/* NEW: LIVE PHILIPPINE TIME CLOCK BADGE */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between shadow-sm space-y-2 sm:space-y-0">
+                  <div className="flex items-center space-x-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#011B51]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="text-center sm:text-left">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Philippine Standard Time</p>
+                      <p className="text-sm font-bold text-[#011B51]">{philippineTime || "Syncing clock..."}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Live</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] sm:text-xs font-bold text-[#011B51] uppercase tracking-wide mb-1.5 lg:mb-2 ml-1">Facility Selection</label>
+                  <select
+                    className="w-full px-4 lg:px-5 py-4 lg:py-5 rounded-xl bg-slate-50 border border-slate-200 outline-none cursor-pointer text-sm sm:text-base font-medium focus:bg-white focus:border-[#011B51] focus:ring-2 focus:ring-[#011B51]/20 transition-all shadow-sm appearance-none"
+                    value={selectedRoom}
+                    onChange={(e) => setSelectedRoom(e.target.value)}
+                    required
+                  >
+                    <option value="" disabled>Select your designated room...</option>
+                    {labRooms.map((room, index) => (
+                      <option key={index} value={room}>{room}</option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isLogging || labRooms.length === 0}
+                  className="w-full bg-[#011B51] hover:bg-[#022a7a] text-white font-bold py-3.5 lg:py-4 rounded-xl mt-6 lg:mt-8 transition-all shadow-md hover:shadow-lg lg:hover:-translate-y-0.5 border-b-4 border-[#A51A21] disabled:opacity-70 disabled:border-[#011B51] disabled:transform-none text-xs sm:text-sm uppercase tracking-wider"
+                >
+                  {isLogging ? "Verifying Keys..." : "Securely Log Attendance"}
+                </button>
+              </form>
             </div>
-          </div>
-        )}
+          )}
 
-        {view === "attendance" && (
-          <div className="animate-in fade-in duration-300">
-            <div className="text-center mb-8 mt-4">
-              <h2 className="text-2xl font-bold text-gray-800">
-                Log Attendance
-              </h2>
-              <p className="text-gray-500 mt-2 text-sm">
-                Select your current lab room.
-              </p>
+          {/* GLOBAL MESSAGE HANDLER */}
+          {message && (
+            <div className={`mt-6 lg:mt-8 p-4 lg:p-5 rounded-xl text-center text-xs sm:text-sm font-bold uppercase tracking-wide border-2 ${isError ? 'bg-rose-50 text-rose-700 border-rose-200' : message.includes("LATE") ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+              {message}
             </div>
-            <form onSubmit={handleLogAttendance} className="space-y-6">
-              <select
-                className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 outline-none cursor-pointer"
-                value={selectedRoom}
-                onChange={(e) => setSelectedRoom(e.target.value)}
-                required
-              >
-                <option value="" disabled>
-                  Select your lab room...
-                </option>
-                {labRooms.map((room, index) => (
-                  <option key={index} value={room}>
-                    {room}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                disabled={isLogging || labRooms.length === 0}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg disabled:bg-green-400 mt-4"
-              >
-                {isLogging ? "Verifying..." : "Log Attendance"}
-              </button>
-            </form>
-          </div>
-        )}
+          )}
 
-        {message && (
-          <div
-            className={`mt-6 p-4 rounded-lg text-sm font-medium border ${isError ? "bg-red-50 text-red-700 border-red-200" : message.includes("LATE") ? "bg-yellow-50 text-yellow-800 border-yellow-300" : "bg-green-50 text-green-700 border-green-200"}`}
-          >
-            {message}
-          </div>
-        )}
+        </div>
       </div>
     </main>
   );
