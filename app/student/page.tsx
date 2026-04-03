@@ -30,7 +30,6 @@ export default function SmartStudentPortal() {
   const [isError, setIsError] = useState(false);
   const [isNameLocked, setIsNameLocked] = useState(false);
 
-  // NEW: State for Philippine Time
   const [philippineTime, setPhilippineTime] = useState("");
 
   useEffect(() => {
@@ -46,7 +45,6 @@ export default function SmartStudentPortal() {
     initialize();
   }, []);
 
-  // NEW: Your Exact Time Tracker Hook (with fixed backticks)
   useEffect(() => {
     function updatePhilippineTime() {
       const now = new Date();
@@ -469,23 +467,16 @@ export default function SmartStudentPortal() {
 
               <form onSubmit={handleLogAttendance} className="space-y-4 lg:space-y-6">
                 
-                {/* NEW: LIVE PHILIPPINE TIME CLOCK BADGE */}
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between shadow-sm space-y-2 sm:space-y-0">
-                  <div className="flex items-center space-x-3">
+                {/* CLEAN & FORMAL SYSTEM TIME BADGE */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-center shadow-sm">
+                  <div className="flex items-center space-x-3 text-left">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#011B51]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <div className="text-center sm:text-left">
+                    <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Philippine Standard Time</p>
                       <p className="text-sm font-bold text-[#011B51]">{philippineTime || "Syncing clock..."}</p>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
-                    <span className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                    </span>
-                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Live</span>
                   </div>
                 </div>
 
