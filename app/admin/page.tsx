@@ -122,7 +122,7 @@ export default function AdminDashboard() {
             </div>
             
             <div className="hidden lg:block mt-auto pt-12">
-              <p className="text-white/80 text-base lg:text-lg leading-relaxed font-medium drop-shadow-lg max-w-md">
+              <p className="text-white/90 text-base lg:text-lg leading-relaxed font-medium drop-shadow-lg max-w-xl">
                 Secure access portal for authorized personnel. Manage student attendance records, oversee lab schedules, and control device registry infrastructure.
               </p>
             </div>
@@ -167,7 +167,7 @@ export default function AdminDashboard() {
                   <input 
                     type="password" 
                     placeholder="Enter password" 
-                    className="w-full px-4 lg:px-5 py-3.5 lg:py-4 rounded-xl bg-slate-50 border border-slate-200 outline-none text-sm sm:text-base font-medium focus:bg-white focus:border-[#011B51] focus:ring-2 focus:ring-[#011B51]/20 transition-all tracking-[0.2em] shadow-sm" 
+                    className="w-full px-4 lg:px-5 py-3.5 lg:py-4 rounded-xl bg-slate-50 border border-slate-200 outline-none text-sm sm:text-base font-medium focus:bg-white focus:border-[#011B51] focus:ring-2 focus:ring-[#011B51]/20 transition-all shadow-sm" 
                     value={password} 
                     onChange={(e) => setPassword(e.target.value)} 
                     required 
@@ -223,7 +223,7 @@ export default function AdminDashboard() {
           <div className="flex items-center space-x-4">
             <img src="/ua-logo.png" alt="UA Logo" className="w-12 h-12 object-contain bg-white rounded-full p-1 shadow-inner" />
             <div>
-              <h1 className="text-2xl font-black text-white tracking-tight uppercase">Admin Control Panel</h1>
+              <h1 className="text-3xl font-black text-white tracking-tight">Admin Control Panel</h1>
               <p className="text-[#FED702] text-xs font-bold uppercase tracking-widest mt-1">Logged in as: {adminId}</p>
             </div>
           </div>
@@ -232,15 +232,15 @@ export default function AdminDashboard() {
               setIsAuthenticated(false);
               setPassword(""); 
             }} 
-            className="text-xs font-bold bg-[#A51A21] hover:bg-[#851319] text-white uppercase tracking-wider px-5 py-2.5 rounded-lg shadow-sm transition-colors border border-transparent hover:border-white/20"
+            className="text-xs font-bold bg-[#A51A21] hover:bg-[#851319] text-white uppercase tracking-wider px-5 py-2.5 rounded-lg shadow-sm transition-colors border border-transparent hover:border-white/20 cursor-pointer"
           >
             Log Out
           </button>
         </div>
         <div className="max-w-7xl mx-auto mt-8 flex space-x-6 sm:space-x-8 overflow-x-auto no-scrollbar">
-          <button onClick={() => setActiveTab("attendance")} className={`pb-3 text-xs sm:text-sm font-bold uppercase tracking-wider border-b-4 transition-colors whitespace-nowrap ${activeTab === "attendance" ? "border-white text-white" : "border-transparent text-white/50 hover:text-white/80"}`}>Attendance Records</button>
-          <button onClick={() => setActiveTab("schedules")} className={`pb-3 text-xs sm:text-sm font-bold uppercase tracking-wider border-b-4 transition-colors whitespace-nowrap ${activeTab === "schedules" ? "border-white text-white" : "border-transparent text-white/50 hover:text-white/80"}`}>System Schedules</button>
-          <button onClick={() => setActiveTab("devices")} className={`pb-3 text-xs sm:text-sm font-bold uppercase tracking-wider border-b-4 transition-colors whitespace-nowrap ${activeTab === "devices" ? "border-white text-white" : "border-transparent text-white/50 hover:text-white/80"}`}>Device Management</button>
+          <button onClick={() => setActiveTab("attendance")} className={`pb-3 text-xs sm:text-sm font-bold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap ${activeTab === "attendance" ? "border-white text-white" : "border-transparent text-white/50 hover:text-white/80 cursor-pointer"}`}>Attendance Records</button>
+          <button onClick={() => setActiveTab("schedules")} className={`pb-3 text-xs sm:text-sm font-bold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap ${activeTab === "schedules" ? "border-white text-white" : "border-transparent text-white/50 hover:text-white/80 cursor-pointer"}`}>System Schedules</button>
+          <button onClick={() => setActiveTab("devices")} className={`pb-3 text-xs sm:text-sm font-bold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap ${activeTab === "devices" ? "border-white text-white" : "border-transparent text-white/50 hover:text-white/80 cursor-pointer"}`}>Device Management</button>
         </div>
       </header>
 

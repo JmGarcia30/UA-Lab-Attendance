@@ -29,10 +29,10 @@ export default function LandingPage() {
         </div>
 
         {/* Header Text */}
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#E6ECF0] tracking-tight mb-2 drop-shadow-sm">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#FFFFFF] tracking-tight mb-2 drop-shadow-xl">
           UA Laboratory System
         </h1>
-        <p className="text-[#011B51]/90 font-medium text-sm sm:text-base mb-8 sm:mb-12 drop-shadow-sm">
+        <p className="text-[#F7F7F7]/90 font-small text-sm sm:text-base mb-8 mt-5 sm:mb-12 drop-shadow-sm">
           Secure identity verification and attendance tracking.
         </p>
 

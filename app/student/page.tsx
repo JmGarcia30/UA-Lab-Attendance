@@ -32,16 +32,32 @@ export default function SmartStudentPortal() {
 
   const [philippineTime, setPhilippineTime] = useState("");
 
+  // Display Student ID
+  const [registeredId, setRegisteredId] = useState<string | null>(null);
+
   useEffect(() => {
     async function initialize() {
       const privateKey = await get("student_private_key");
-      if (privateKey) {
+      const storedId = await get("student_id"); // Display Student ID
+
+      if (privateKey && storedId) {
+        setRegisteredId(storedId); // Set it to state
         setView("attendance");
         fetchRooms();
       } else {
         setView("register");
       }
     }
+
+      /* if (privateKey) {
+        setView("attendance");
+        fetchRooms();
+      } else {
+        setView("register");
+      }
+    }
+    */
+
     initialize();
   }, []);
 
@@ -129,6 +145,8 @@ export default function SmartStudentPortal() {
       if (dbResponse.success) {
         await set("student_private_key", keyPair.privateKey);
         await set("student_id", studentId);
+
+        setRegisteredId(studentId); // Display Student ID
 
         setMessage("Device registered successfully!");
         setTimeout(() => {
@@ -284,7 +302,7 @@ export default function SmartStudentPortal() {
             <img src="/ua-logo.png" alt="UA Logo" className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 object-contain lg:mb-8 drop-shadow-xl shrink-0" />
             
             {/* Title scales down dynamically */}
-            <h1 className="text-2xl sm:text-4xl lg:text-5xl xl:text-7xl font-black text-white tracking-tight leading-tight uppercase drop-shadow-2xl">
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl xl:text-6xl font-black text-white tracking-tight leading-tight uppercase drop-shadow-2xl">
               Student <br className="hidden lg:block"/>
               <span className="text-[#FED702]">Lab Attendance</span><br className="hidden lg:block"/>
               <span className="lg:hidden"> System</span>
@@ -294,8 +312,8 @@ export default function SmartStudentPortal() {
           
           {/* Paragraph is completely hidden on mobile to save space, shows only on large screens */}
           <div className="hidden lg:block mt-auto pt-12">
-            <p className="text-white/90 text-base lg:text-lg leading-relaxed font-medium drop-shadow-lg max-w-md">
-              Every school needs a good system to track student attendance. Logging each entry by hand is time-consuming and prone to errors. Use this secure interface to register your device and log lab sessions effortlessly.
+            <p className="text-white/90 text-base lg:text-lg leading-relaxed font-medium drop-shadow-lg max-w-xl">
+              Secure entry portal for registered students. Use this encrypted interface to register your device and log laboratory sessions effortlessly.
             </p>
           </div>
         </div>
@@ -307,7 +325,7 @@ export default function SmartStudentPortal() {
       <div className="w-full lg:w-[60%] flex-1 flex items-center justify-center p-6 sm:p-10 lg:p-16 bg-white relative">
         
         <a href="/" className="absolute top-4 right-6 lg:top-8 lg:right-10 text-xs font-bold text-slate-400 hover:text-[#011B51] transition-colors uppercase tracking-wider">
-          &larr; Portal
+          &larr; Main Portal
         </a>
 
         {/* Form container */}
@@ -373,7 +391,7 @@ export default function SmartStudentPortal() {
                     maxLength={4}
                     pattern="\d{4}"
                     title="Must be exactly 4 numbers"
-                    className="w-full px-4 lg:px-5 py-3.5 lg:py-4 rounded-xl bg-slate-50 border border-slate-200 outline-none text-sm sm:text-base font-medium focus:bg-white focus:border-[#011B51] focus:ring-2 focus:ring-[#011B51]/20 transition-all tracking-[0.3em] shadow-sm"
+                    className="w-full px-4 lg:px-5 py-3.5 lg:py-4 rounded-xl bg-slate-50 border border-slate-200 outline-none text-sm sm:text-base font-medium focus:bg-white focus:border-[#011B51] focus:ring-2 focus:ring-[#011B51]/20 transition-all shadow-sm"
                     value={recoveryPin}
                     onChange={(e) => setRecoveryPin(e.target.value)}
                     required
@@ -460,6 +478,12 @@ export default function SmartStudentPortal() {
           {view === "attendance" && (
             <div className="animate-in fade-in duration-500">
               <div className="mb-8 lg:mb-10 text-center lg:text-left">
+
+                {/* Display Student ID */}
+                <span className="inline-block px-3 py-1 mb-7 rounded-full bg-[#011B51]/10 text-[#011B51] text-[11px] font-black uppercase tracking-widest border border-[#011B51]/20">
+                  Student ID: {registeredId}
+                </span>
+
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#011B51] uppercase tracking-tight">Log Attendance</h2>
                 <div className="w-12 lg:w-16 h-1 lg:h-1.5 bg-[#FED702] mt-3 lg:mt-4 mb-2 lg:mb-3 rounded-full mx-auto lg:mx-0"></div>
                 <p className="text-slate-500 text-xs sm:text-sm font-semibold uppercase tracking-wide">Select your current facility.</p>
@@ -488,7 +512,7 @@ export default function SmartStudentPortal() {
                     onChange={(e) => setSelectedRoom(e.target.value)}
                     required
                   >
-                    <option value="" disabled>Select your designated room...</option>
+                    <option value="" disabled>Select your laboratory room...</option>
                     {labRooms.map((room, index) => (
                       <option key={index} value={room}>{room}</option>
                     ))}

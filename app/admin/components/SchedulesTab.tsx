@@ -124,7 +124,7 @@ export default function SchedulesTab({ schedules, refreshData }: SchedulesTabPro
             {uniqueRooms.map(room => <option key={room} value={room}>{room}</option>)}
           </select>
         </div>
-        <button onClick={openAddModal} className="bg-slate-900 hover:bg-slate-800 text-white font-medium py-2 px-5 rounded-md text-sm transition-colors">
+        <button onClick={openAddModal} className="bg-slate-900 hover:bg-slate-800 text-white font-medium py-2 px-5 rounded-md text-sm transition-colors cursor-pointer">
           Add New Schedule
         </button>
       </div>
@@ -139,17 +139,17 @@ export default function SchedulesTab({ schedules, refreshData }: SchedulesTabPro
                 <span className="text-sm font-medium text-slate-500">{sched.schedule}</span>
               </div>
               <h3 className="text-lg font-bold text-slate-900">{sched.course_code}</h3>
-              <p className="text-sm text-slate-500 mb-5">Section {sched.section}</p>
+              <p className="text-sm text-slate-500 mb-5">Section: {sched.section}</p>
               <div className="pt-4 border-t border-slate-100 flex flex-col space-y-2 text-sm mb-6">
                 <div className="flex justify-between items-center"><span className="text-slate-500">Facility:</span><span className="text-slate-900 font-medium">{sched.lab_room}</span></div>
                 <div className="flex justify-between items-center"><span className="text-slate-500">Instructor:</span><span className="text-slate-900 font-medium">{sched.professor_name}</span></div>
               </div>
             </div>
             <div className="flex gap-3 border-t border-slate-100 pt-4">
-              <button onClick={() => openEditModal(sched)} className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-medium py-2 rounded-md text-xs transition-colors">
+              <button onClick={() => openEditModal(sched)} className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-medium py-2 rounded-md text-xs transition-colors cursor-pointer">
                 Edit Details
               </button>
-              <button onClick={() => handleDelete(sched.id)} disabled={isSubmitting} className="flex-1 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 font-medium py-2 rounded-md text-xs transition-colors disabled:opacity-50">
+              <button onClick={() => handleDelete(sched.id)} disabled={isSubmitting} className="flex-1 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 font-medium py-2 rounded-md text-xs transition-colors disabled:opacity-50 cursor-pointer">
                 Remove
               </button>
             </div>
@@ -160,9 +160,9 @@ export default function SchedulesTab({ schedules, refreshData }: SchedulesTabPro
       
       {filteredSchedules.length > 0 && (
         <div className="flex justify-between px-6 py-4 bg-transparent">
-          <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md disabled:opacity-50">Previous</button>
+          <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md disabled:opacity-50 cursor-pointer">Previous</button>
           <span className="text-sm text-slate-700 self-center">Page <span className="font-semibold">{currentPage}</span> of {totalPages}</span>
-          <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md disabled:opacity-50">Next</button>
+          <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md disabled:opacity-50 cursor-pointer">Next</button>
         </div>
       )}
 
@@ -172,7 +172,7 @@ export default function SchedulesTab({ schedules, refreshData }: SchedulesTabPro
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <h3 className="text-lg font-bold text-slate-900">{modalMode === "add" ? "Create New Schedule" : "Edit Class Details"}</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-700 font-bold text-xl">&times;</button>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-700 font-bold text-xl cursor-pointer">&times;</button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -207,8 +207,8 @@ export default function SchedulesTab({ schedules, refreshData }: SchedulesTabPro
               </div>
               
               <div className="pt-4 mt-6 border-t border-slate-100 flex justify-end gap-3">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md transition-colors">Cancel</button>
-                <button type="submit" disabled={isSubmitting} className="px-6 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-md transition-colors disabled:opacity-50">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md transition-colors cursor-pointer">Cancel</button>
+                <button type="submit" disabled={isSubmitting} className="px-6 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-md transition-colors disabled:opacity-50 cursor-pointer">
                   {isSubmitting ? "Saving..." : "Save Schedule"}
                 </button>
               </div>

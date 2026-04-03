@@ -87,7 +87,7 @@ export default function AttendanceTab({ logs }: { logs: AttendanceLog[] }) {
             <h2 className="text-lg font-bold text-slate-900">Record Filters</h2>
             <p className="text-sm text-slate-500 mt-0.5">Showing {filteredLogs.length} matching records</p>
           </div>
-          <button onClick={downloadCSV} className="bg-slate-900 hover:bg-slate-800 text-white font-medium py-2 px-5 rounded-md text-sm transition-colors shadow-sm">
+          <button onClick={downloadCSV} className="bg-slate-900 hover:bg-slate-800 text-white font-medium py-2 px-5 rounded-md text-sm transition-colors shadow-sm cursor-pointer">
             Export Data (CSV)
           </button>
         </div>
@@ -184,7 +184,7 @@ export default function AttendanceTab({ logs }: { logs: AttendanceLog[] }) {
             <button 
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
               disabled={currentPage === 1} 
-              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md disabled:opacity-50 hover:bg-slate-100 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md disabled:opacity-50 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               Previous
             </button>
@@ -194,7 +194,7 @@ export default function AttendanceTab({ logs }: { logs: AttendanceLog[] }) {
             <button 
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
               disabled={currentPage === totalPages} 
-              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md disabled:opacity-50 hover:bg-slate-100 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md disabled:opacity-50 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               Next
             </button>

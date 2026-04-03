@@ -60,7 +60,7 @@ export default function DevicesTab({ students, onResetDevice, isLoading }: Devic
       {/* Search & Header Section */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-black text-[#011B51] uppercase tracking-tight">Registered Endpoints</h2>
+          <h2 className="text-xl font-black text-[#011B51] uppercase">Registered Endpoints</h2>
           <p className="text-slate-500 text-sm mt-1 font-medium">Manage physical device access and view ECC Public Keys.</p>
         </div>
         
@@ -137,7 +137,7 @@ export default function DevicesTab({ students, onResetDevice, isLoading }: Devic
                       {hasKey && (
                         <button 
                           onClick={() => toggleDecryption(id)} 
-                          className="text-xs bg-slate-100 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-lg hover:bg-slate-200 hover:text-slate-900 font-bold uppercase tracking-wide transition-all shadow-sm"
+                          className="text-xs bg-slate-100 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-lg hover:bg-slate-200 hover:text-slate-900 font-bold uppercase tracking-wide transition-all shadow-sm cursor-pointer"
                         >
                           {isDecrypted ? "Lock Data" : "Decrypt"}
                         </button>
@@ -145,7 +145,7 @@ export default function DevicesTab({ students, onResetDevice, isLoading }: Devic
                       <button 
                         onClick={() => onResetDevice(id)} 
                         disabled={isLoading || !hasKey} 
-                        className="text-xs bg-white border border-rose-200 text-rose-600 px-4 py-2.5 rounded-lg hover:bg-rose-50 font-bold uppercase tracking-wide transition-all shadow-sm disabled:opacity-50 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200"
+                        className="text-xs bg-white border border-rose-200 text-rose-600 px-4 py-2.5 rounded-lg hover:bg-rose-50 font-bold uppercase tracking-wide transition-all shadow-sm disabled:opacity-50 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200 cursor-pointer"
                       >
                         Revoke Device
                       </button>
@@ -171,7 +171,7 @@ export default function DevicesTab({ students, onResetDevice, isLoading }: Devic
             <button 
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
               disabled={validPage === 1} 
-              className="px-4 py-2 text-xs font-bold text-[#011B51] uppercase tracking-wide bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:hover:bg-white"
+              className="px-4 py-2 text-xs font-bold text-[#011B51] uppercase tracking-wide bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:hover:bg-white cursor-pointer"
             >
               Previous
             </button>
@@ -181,7 +181,7 @@ export default function DevicesTab({ students, onResetDevice, isLoading }: Devic
             <button 
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
               disabled={validPage === totalPages} 
-              className="px-4 py-2 text-xs font-bold text-[#011B51] uppercase tracking-wide bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:hover:bg-white"
+              className="px-4 py-2 text-xs font-bold text-[#011B51] uppercase tracking-wide bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:hover:bg-white cursor-pointer"
             >
               Next
             </button>
