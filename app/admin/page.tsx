@@ -177,7 +177,7 @@ export default function AdminDashboard() {
                 <button 
                   type="submit" 
                   disabled={isLoading} 
-                  className={`w-full text-white font-bold py-3.5 lg:py-4 rounded-xl mt-6 lg:mt-8 transition-all shadow-md hover:shadow-lg lg:hover:-translate-y-0.5 border-b-4 disabled:opacity-70 disabled:transform-none text-xs sm:text-sm uppercase tracking-wider ${
+                  className={`w-full text-white font-bold py-3.5 lg:py-4 rounded-xl mt-6 lg:mt-8 transition-all shadow-md hover:shadow-lg lg:hover:-translate-y-0.5 border-b-4 disabled:opacity-70 disabled:transform-none text-xs sm:text-sm uppercase tracking-wider cursor-pointer ${
                     isRegistering 
                       ? "bg-[#A51A21] hover:bg-[#851319] border-[#610a10] disabled:border-[#A51A21]" 
                       : "bg-[#011B51] hover:bg-[#022a7a] border-[#A51A21] disabled:border-[#011B51]"
@@ -199,7 +199,7 @@ export default function AdminDashboard() {
                     setIsRegistering(!isRegistering);
                     setMessage("");
                   }} 
-                  className="text-xs sm:text-sm font-bold text-slate-400 hover:text-[#011B51] uppercase tracking-wide transition-colors"
+                  className="text-xs sm:text-sm font-bold text-slate-400 hover:text-[#011B51] uppercase tracking-wide transition-colors cursor-pointer"
                 >
                   {isRegistering ? "Existing Admin? Log in here" : "Need an admin account? Register here"}
                 </button>

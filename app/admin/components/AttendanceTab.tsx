@@ -166,7 +166,7 @@ export default function AttendanceTab({ logs }: { logs: AttendanceLog[] }) {
                   </td>
                   <td className="p-4">
                     <div className="font-medium text-slate-900">{log.schedule.course_code}</div>
-                    <div className="text-slate-500 text-xs mt-0.5">Section {log.schedule.section}</div>
+                    <div className="text-slate-500 text-xs mt-0.5">Section: {log.schedule.section}</div>
                   </td>
                   <td className="p-4 text-slate-600">{log.schedule.lab_room}</td>
                 </tr>

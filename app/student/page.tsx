@@ -401,7 +401,7 @@ export default function SmartStudentPortal() {
                 <button
                   type="submit"
                   disabled={isRegistering}
-                  className="w-full bg-[#011B51] hover:bg-[#022a7a] text-white font-bold py-3.5 lg:py-4 rounded-xl mt-6 lg:mt-8 transition-all shadow-md hover:shadow-lg lg:hover:-translate-y-0.5 border-b-4 border-[#A51A21] disabled:opacity-70 disabled:border-[#011B51] disabled:transform-none text-xs sm:text-sm uppercase tracking-wider"
+                  className="w-full bg-[#011B51] hover:bg-[#022a7a] text-white font-bold py-3.5 lg:py-4 rounded-xl mt-6 lg:mt-8 transition-all shadow-md hover:shadow-lg lg:hover:-translate-y-0.5 border-b-4 border-[#A51A21] disabled:opacity-70 disabled:border-[#011B51] disabled:transform-none text-xs sm:text-sm uppercase tracking-wider cursor-pointer"
                 >
                   {isRegistering ? "Registering Device..." : "Register Device"}
                 </button>
@@ -416,7 +416,7 @@ export default function SmartStudentPortal() {
               )}
 
               <div className="mt-8 lg:mt-12 text-center border-t border-slate-100 pt-6 lg:pt-8">
-                <button onClick={() => { setView("recovery"); setMessage(""); setIsError(false); }} className="text-xs sm:text-sm font-bold text-slate-400 hover:text-[#A51A21] uppercase tracking-wide transition-colors">
+                <button onClick={() => { setView("recovery"); setMessage(""); setIsError(false); }} className="text-xs sm:text-sm font-bold text-slate-400 hover:text-[#A51A21] uppercase tracking-wide transition-colors cursor-pointer">
                   Lost your device? <span className="underline underline-offset-4 decoration-2">Recover account</span>
                 </button>
               </div>
@@ -521,7 +521,7 @@ export default function SmartStudentPortal() {
                 <button
                   type="submit"
                   disabled={isLogging || labRooms.length === 0}
-                  className="w-full bg-[#011B51] hover:bg-[#022a7a] text-white font-bold py-3.5 lg:py-4 rounded-xl mt-6 lg:mt-8 transition-all shadow-md hover:shadow-lg lg:hover:-translate-y-0.5 border-b-4 border-[#A51A21] disabled:opacity-70 disabled:border-[#011B51] disabled:transform-none text-xs sm:text-sm uppercase tracking-wider"
+                  className="w-full bg-[#011B51] hover:bg-[#022a7a] text-white font-bold py-3.5 lg:py-4 rounded-xl mt-6 lg:mt-8 transition-all shadow-md hover:shadow-lg lg:hover:-translate-y-0.5 border-b-4 border-[#A51A21] disabled:opacity-70 disabled:border-[#011B51] disabled:transform-none text-xs sm:text-sm uppercase tracking-wider cursor-pointer"
                 >
                   {isLogging ? "Verifying Keys..." : "Securely Log Attendance"}
                 </button>
