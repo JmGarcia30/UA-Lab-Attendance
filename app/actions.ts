@@ -115,6 +115,29 @@ export async function recoverStudentDevice(studentId: string, pin: string) {
   }
 }
 
+export async function verifyAdminSecret(secret: string) {
+  const configuredSecret = process.env.ADMIN_SETUP_SECRET;
+
+  if (!configuredSecret) {
+    return {
+      success: false,
+      message: "Administrative secret is not configured.",
+    };
+  }
+
+  if (secret !== configuredSecret) {
+    return {
+      success: false,
+      message: "Invalid Administrative Secret.",
+    };
+  }
+
+  return {
+    success: true,
+    message: "Administrative Secret verified.",
+  };
+}
+
 export async function getLabRooms() {
   try {
     const schedules = await prisma.schedule.findMany({
