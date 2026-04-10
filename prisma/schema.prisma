@@ -7,9 +7,35 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Admin {
-  admin_id   String   @id
-  password   String   @db.Text
+enum Role {
+  ADMIN
+  TEACHER
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  user_id  String @unique 
+  password String 
+  name     String 
+  role     Role   @default(TEACHER)
+  
+  schedules Schedule[]
+}
+
+model Schedule {
+  id             Int             @id @default(autoincrement())
+  lab_room       String
+  date           String
+  schedule       String
+  course_code    String
+  section        String
+
+  active_pin     String?
+  pin_expires_at DateTime?
+
+  teacher_id     Int?
+  teacher        User?           @relation(fields: [teacher_id], references: [id])
+  attendances    AttendanceLog[]
 }
 
 model Student {
@@ -22,17 +48,6 @@ model Student {
   attendances  AttendanceLog[]
 }
 
-model Schedule {
-  id             Int             @id @default(autoincrement())
-  lab_room       String
-  date           String
-  schedule       String
-  course_code    String
-  section        String
-  professor_name String
-  attendances    AttendanceLog[]
-}
-
 model AttendanceLog {
   id          Int      @id @default(autoincrement())
   student_id  String
@@ -43,4 +58,6 @@ model AttendanceLog {
 
   student     Student  @relation(fields: [student_id], references: [student_id])
   schedule    Schedule @relation(fields: [schedule_id], references: [id])
+
+  @@unique([student_id, schedule_id]) 
 }
