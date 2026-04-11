@@ -30,7 +30,7 @@ export default function LandingPage() {
 
         {/* Header Text */}
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#FFFFFF] tracking-tight mb-1 mt-4 sm:mt-3 drop-shadow-xl">
-          UA Laboratory System
+          UA Laboratory Attendance
         </h1>
         <p className="text-[#F7F7F7]/90 font-medium text-xs sm:text-base mb-6 sm:mb-8 mt-3 sm:mt-5 drop-shadow-sm">
           Secure identity verification and attendance tracking.
