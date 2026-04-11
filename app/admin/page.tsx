@@ -132,7 +132,7 @@ export default function AdminDashboard() {
         <div className="relative w-full lg:w-[40%] min-h-[25vh] lg:min-h-screen bg-[#011B51] flex flex-col justify-center lg:justify-between p-6 sm:p-10 lg:p-14 overflow-hidden shadow-md lg:shadow-2xl z-10 border-b-4 lg:border-b-0 lg:border-r-4 border-[#A51A21] shrink-0">
           <div className="absolute inset-0 z-0 bg-[#011B51]">
             <img
-              src="/lab-background.jpg"
+              src="/labs.jpg"
               alt="UA Background"
               className="w-full h-full object-cover opacity-80"
             />
@@ -169,7 +169,7 @@ export default function AdminDashboard() {
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#011B51] uppercase tracking-tight">
                   Admin Access
                 </h2>
-                <div className="w-12 lg:w-16 h-1 lg:h-1.5 bg-[#011B51] mt-3 lg:mt-4 mb-2 lg:mb-3 rounded-full mx-auto lg:mx-0"></div>
+                <div className="w-12 lg:w-16 h-1 lg:h-1.5 bg-[#A51A21] mt-3 lg:mt-4 mb-2 lg:mb-3 rounded-full mx-auto lg:mx-0"></div>
                 <p className="text-slate-500 text-xs sm:text-sm font-semibold uppercase tracking-wide">
                   Enter administrative credentials to proceed.
                 </p>

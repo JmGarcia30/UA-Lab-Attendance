@@ -152,7 +152,7 @@ export default function TeacherDashboard() {
       <main className="min-h-screen w-full flex flex-col lg:flex-row bg-white overflow-hidden font-sans">
         <div className="relative w-full lg:w-[40%] min-h-[25vh] lg:min-h-screen bg-[#011B51] flex flex-col justify-center lg:justify-between p-6 sm:p-10 lg:p-14 overflow-hidden shadow-md lg:shadow-2xl z-10 border-b-4 lg:border-b-0 lg:border-r-4 border-[#FED702] shrink-0">
           <div className="absolute inset-0 z-0 bg-[#011B51]">
-            <img src="/lab-background.jpg" alt="UA Background" className="w-full h-full object-cover opacity-80" />
+            <img src="/labs.jpg" alt="UA Background" className="w-full h-full object-cover opacity-80" />
             <div className="absolute inset-0 bg-[#011B51]/75"></div>
           </div>
           <div className="relative z-10 flex flex-col h-full">
