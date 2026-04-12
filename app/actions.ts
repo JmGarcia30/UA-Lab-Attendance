@@ -157,7 +157,14 @@ export async function submitAttendance(data: {
       true,
       ["verify"],
     );
-
+// =========================================================================
+// ECC CORE ALGORITHM: RELEVANT OPERATION (SIGNATURE VERIFICATION)
+// Instruction Requirement: Explain other relevant operations
+// The server retrieves the student's Public Key from the database.
+// It reconstructs the exact message payload and uses the ECC math to verify 
+// that the signature matches. If someone tampered with the time or room, 
+// or if the wrong private key was used, isValid becomes false.
+// =========================================================================
     const isValid = await globalThis.crypto.subtle.verify(
       { name: "ECDSA", hash: { name: "SHA-256" } },
       importedPublicKey,
