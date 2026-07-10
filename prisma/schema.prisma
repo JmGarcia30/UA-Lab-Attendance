@@ -3,9 +3,14 @@ generator client {
 }
 
 datasource db {
+<<<<<<< HEAD
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+=======
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+>>>>>>> 6bacd43a28d0f410eebd9adb60305d1f3d6e7ecb
 }
 
 enum Role {
@@ -24,7 +29,11 @@ model User {
 }
 
 model Schedule {
+<<<<<<< HEAD
   id             Int       @id @default(autoincrement())
+=======
+  id             Int             @id @default(autoincrement())
+>>>>>>> 6bacd43a28d0f410eebd9adb60305d1f3d6e7ecb
   lab_room       String
   date           String
   schedule       String
@@ -35,7 +44,11 @@ model Schedule {
   pin_expires_at DateTime?
 
   teacher_id     Int?
+<<<<<<< HEAD
   teacher        User?     @relation(fields: [teacher_id], references: [id])
+=======
+  teacher        User?           @relation(fields: [teacher_id], references: [id])
+>>>>>>> 6bacd43a28d0f410eebd9adb60305d1f3d6e7ecb
   attendances    AttendanceLog[]
 }
 
@@ -44,7 +57,11 @@ model Student {
   student_id   String          @unique
   first_name   String
   last_name    String
+<<<<<<< HEAD
   public_key   String          // @db.Text removed
+=======
+  public_key   String          @db.Text
+>>>>>>> 6bacd43a28d0f410eebd9adb60305d1f3d6e7ecb
   recovery_pin String          
   attendances  AttendanceLog[]
 }
@@ -55,7 +72,11 @@ model AttendanceLog {
   schedule_id Int
   timestamp   DateTime @default(now())
   status      String   @default("ON_TIME")
+<<<<<<< HEAD
   signature   String         // @db.Text removed
+=======
+  signature   String   @db.Text
+>>>>>>> 6bacd43a28d0f410eebd9adb60305d1f3d6e7ecb
 
   student     Student  @relation(fields: [student_id], references: [student_id])
   schedule    Schedule @relation(fields: [schedule_id], references: [id])
