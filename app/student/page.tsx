@@ -1,21 +1,40 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { get, set, del } from "idb-keyval";
 import {
   registerStudentToDatabase,
-  getLabRooms,
-  submitAttendance,
   recoverStudentDevice,
   checkRevokedStatus,
+  getLabRooms,
+  submitAttendance,
   getServerTime,
-} from "../actions";
+} from "@/app/actions/student";
 import GeofenceGuard from "./components/GeofenceGuard";
+
+interface AttendanceRecord {
+  id: number;
+  student_id: string;
+  timestamp: string;
+  status: string;
+  signature?: string;
+  schedule?: {
+    course_code: string;
+    section: string;
+    lab_room: string;
+    schedule: string;
+    date: string;
+  };
+}
+
+const ITEMS_PER_PAGE = 5;
 
 export default function SmartStudentPortal() {
   const [view, setView] = useState<
     "loading" | "register" | "attendance" | "recovery"
   >("loading");
+
+  const [studentTab, setStudentTab] = useState<"checkin" | "history">("checkin");
 
   const [studentId, setStudentId] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -25,35 +44,105 @@ export default function SmartStudentPortal() {
 
   const [labRooms, setLabRooms] = useState<string[]>([]);
   const [selectedRoom, setSelectedRoom] = useState("");
-
   const [roomPin, setRoomPin] = useState("");
-
   const [isLogging, setIsLogging] = useState(false);
+
+  const [historyLogs, setHistoryLogs] = useState<AttendanceRecord[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [historySearch, setHistorySearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const [showDeauthModal, setShowDeauthModal] = useState(false);
 
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [isNameLocked, setIsNameLocked] = useState(false);
 
   const [philippineTime, setPhilippineTime] = useState("");
-
   const [registeredId, setRegisteredId] = useState<string | null>(null);
+
+  const fetchHistory = useCallback(async (idToFetch: string) => {
+    if (!idToFetch) return;
+    setIsLoadingHistory(true);
+    try {
+      const res = await fetch(`/api/student/history?studentId=${encodeURIComponent(idToFetch)}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setHistoryLogs(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching web student history:", error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }, []);
 
   useEffect(() => {
     async function initialize() {
       const privateKey = await get("student_private_key");
       const storedId = await get("student_id");
+      const localPublicKey = await get("student_public_key");
 
       if (privateKey && storedId) {
+        const statusCheck = await checkRevokedStatus(storedId);
+
+        const isKeyMismatched =
+          statusCheck.currentPublicKey &&
+          localPublicKey &&
+          statusCheck.currentPublicKey !== localPublicKey;
+
+        if (statusCheck.isRevoked || isKeyMismatched) {
+          await del("student_private_key");
+          await del("student_id");
+          await del("student_public_key");
+          setView("register");
+          setIsError(true);
+          setMessage("Device access was revoked or transferred to another device.");
+          return;
+        }
+
         setRegisteredId(storedId);
         setView("attendance");
         fetchRooms();
+        fetchHistory(storedId);
       } else {
         setView("register");
       }
     }
 
     initialize();
-  }, []);
+  }, [fetchHistory]);
+
+  useEffect(() => {
+    if (view !== "attendance" || !registeredId) return;
+
+    async function verifyActiveSession() {
+      if (document.visibilityState === "visible" && registeredId) {
+        const statusRes = await checkRevokedStatus(registeredId);
+        const localPublicKey = await get("student_public_key");
+
+        const isKeyMismatched =
+          statusRes.currentPublicKey &&
+          localPublicKey &&
+          statusRes.currentPublicKey !== localPublicKey;
+
+        if (statusRes.isRevoked || isKeyMismatched) {
+          await del("student_private_key");
+          await del("student_id");
+          await del("student_public_key");
+          setRegisteredId(null);
+          setView("register");
+          setIsError(true);
+          setMessage(
+            "Device authorization revoked or transferred. Please register this device again."
+          );
+        }
+      }
+    }
+
+    const interval = setInterval(verifyActiveSession, 4000);
+    return () => clearInterval(interval);
+  }, [view, registeredId]);
 
   useEffect(() => {
     function updateLocalTime() {
@@ -95,15 +184,18 @@ export default function SmartStudentPortal() {
 
     if (idToSearch.length >= 4) {
       const response = await checkRevokedStatus(idToSearch);
-      if (response.isRevoked) {
-        setFirstName(response.firstName || "");
+
+      // FIX: Only lock the input fields if the account is revoked AND a valid name was returned
+      if (response.isRevoked && response.firstName) {
+        setFirstName(response.firstName);
         setLastName(response.lastName || "");
         setIsNameLocked(true);
         setMessage(
-          "Account found. Please enter a new PIN to register this device.",
+          "Account found. Please enter a new PIN to register this device."
         );
         setIsError(false);
       } else {
+        // If the student doesn't exist yet, keep the fields unlocked for new registration
         setIsNameLocked(false);
       }
     }
@@ -123,21 +215,14 @@ export default function SmartStudentPortal() {
     setIsError(false);
 
     try {
-// =========================================================================
-// ECC CORE ALGORITHM: KEY GENERATION 
-// Instruction Requirement: Explain Key Generation
-// Using the Web Crypto API, we generate an ECDSA P-256 Elliptic Curve key pair.
-// The Private Key is securely stored in the browser (idb-keyval) and never leaves the device.
-// The Public Key is exported as base64 and saved to the database.
-// =========================================================================
       const keyPair = await window.crypto.subtle.generateKey(
         { name: "ECDSA", namedCurve: "P-256" },
         false,
-        ["sign", "verify"],
+        ["sign", "verify"]
       );
       const exportedPublicKey = await window.crypto.subtle.exportKey(
         "spki",
-        keyPair.publicKey,
+        keyPair.publicKey
       );
       const publicKeyArray = Array.from(new Uint8Array(exportedPublicKey));
       const publicKeyBase64 = btoa(String.fromCharCode(...publicKeyArray));
@@ -153,6 +238,7 @@ export default function SmartStudentPortal() {
       if (dbResponse.success) {
         await set("student_private_key", keyPair.privateKey);
         await set("student_id", studentId);
+        await set("student_public_key", publicKeyBase64);
 
         setRegisteredId(studentId);
 
@@ -161,6 +247,7 @@ export default function SmartStudentPortal() {
           setMessage("");
           setView("attendance");
           fetchRooms();
+          fetchHistory(studentId);
         }, 1500);
       } else {
         setIsError(true);
@@ -170,7 +257,7 @@ export default function SmartStudentPortal() {
       console.error(error);
       setIsError(true);
       setMessage(
-        "Server Error: Database connection failed. Keys were NOT saved.",
+        "Server Error: Database connection failed. Keys were NOT saved."
       );
     } finally {
       setIsRegistering(false);
@@ -183,7 +270,7 @@ export default function SmartStudentPortal() {
     if (!roomPin || roomPin.length !== 4) {
       setIsError(true);
       setMessage(
-        "Please enter the 4-digit Room PIN displayed by your instructor.",
+        "Please enter the 4-digit Room PIN displayed by your instructor."
       );
       return;
     }
@@ -216,17 +303,11 @@ export default function SmartStudentPortal() {
       const messageToSign = `${storedStudentId}-${selectedRoom}-${timestamp}`;
       const encoder = new TextEncoder();
       const encodedMessage = encoder.encode(messageToSign);
-// =========================================================================
-// ECC CORE ALGORITHM: RELEVANT OPERATION (DIGITAL SIGNING)
-// Instruction Requirement: Explain other relevant operations
-// Instead of encryption (hiding data), attendance requires Data Integrity and Non-Repudiation.
-// We use the student's Private Key to digitally 'Sign' a payload (ID + Room + Timestamp).
-// This generates a cryptographic signature proving the student is physically present.
-// =========================================================================
+
       const rawSignature = await window.crypto.subtle.sign(
         { name: "ECDSA", hash: { name: "SHA-256" } },
         privateKey,
-        encodedMessage,
+        encodedMessage
       );
       const signatureArray = Array.from(new Uint8Array(rawSignature));
       const signatureBase64 = btoa(String.fromCharCode(...signatureArray));
@@ -242,24 +323,29 @@ export default function SmartStudentPortal() {
       if (response.success) {
         setMessage(response.message);
         setRoomPin("");
+        if (registeredId) fetchHistory(registeredId);
       } else {
         setIsError(true);
         setMessage(response.message);
 
-        if (
+        const isSecurityError =
           response.message.includes("Student not found") ||
           response.message.includes("DEVICE_REVOKED") ||
-          response.message.includes("Digital signature verification failed")
-        ) {
+          response.message.includes("verification failed") ||
+          response.message.includes("Digital signature") ||
+          response.message.includes("Server error");
+
+        if (isSecurityError) {
           await del("student_private_key");
           await del("student_id");
+          await del("student_public_key");
           setTimeout(() => {
             setView("register");
             setIsError(false);
             setMessage(
-              "Security key mismatch detected. Please register this device again.",
+              "Security key mismatch detected. Please register this device again."
             );
-          }, 2500);
+          }, 2000);
         }
       }
     } catch (error) {
@@ -284,6 +370,10 @@ export default function SmartStudentPortal() {
         setMessage(response.message);
         await handleIdCheck(studentId);
 
+        await del("student_private_key");
+        await del("student_public_key");
+        await del("student_id");
+
         setTimeout(() => {
           setMessage("");
           setRecoveryPin("");
@@ -300,6 +390,42 @@ export default function SmartStudentPortal() {
       setIsRegistering(false);
     }
   }
+
+  async function executeDeauthorization() {
+    await del("student_private_key");
+    await del("student_id");
+    await del("student_public_key");
+
+    setRegisteredId(null);
+    setShowDeauthModal(false);
+    setView("register");
+    setMessage("Device deauthorized successfully.");
+    setIsError(false);
+  }
+
+  const processedLogs = useMemo(() => {
+    let sorted = [...historyLogs].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+
+    if (historySearch.trim()) {
+      const query = historySearch.toLowerCase();
+      sorted = sorted.filter((log) => {
+        const course = log.schedule?.course_code?.toLowerCase() || "";
+        const room = log.schedule?.lab_room?.toLowerCase() || "";
+        const section = log.schedule?.section?.toLowerCase() || "";
+        return course.includes(query) || room.includes(query) || section.includes(query);
+      });
+    }
+
+    return sorted;
+  }, [historyLogs, historySearch]);
+
+  const totalPages = Math.ceil(processedLogs.length / ITEMS_PER_PAGE) || 1;
+  const paginatedLogs = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return processedLogs.slice(start, start + ITEMS_PER_PAGE);
+  }, [processedLogs, currentPage]);
 
   if (view === "loading") {
     return (
@@ -450,8 +576,8 @@ export default function SmartStudentPortal() {
                 </button>
               </form>
 
-              {isNameLocked && (
-                <div className="text-center mt-4 lg:mt-5">
+              {isNameLocked ? (
+                <div className="mt-8 lg:mt-12 text-center border-t border-slate-100 pt-6 lg:pt-8">
                   <button
                     type="button"
                     onClick={() => {
@@ -461,28 +587,29 @@ export default function SmartStudentPortal() {
                       setLastName("");
                       setMessage("");
                     }}
-                    className="text-xs sm:text-sm font-bold text-slate-400 hover:text-[#011B51] uppercase tracking-wide transition-colors"
+                    className="text-xs sm:text-sm font-bold text-slate-400 hover:text-[#011B51] uppercase tracking-wide transition-colors cursor-pointer"
                   >
                     Not your account? Clear and try again
                   </button>
                 </div>
+              ) : (
+                <div className="mt-8 lg:mt-12 text-center border-t border-slate-100 pt-6 lg:pt-8">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView("recovery");
+                      setMessage("");
+                      setIsError(false);
+                    }}
+                    className="text-xs sm:text-sm font-bold text-slate-400 hover:text-[#A51A21] uppercase tracking-wide transition-colors cursor-pointer"
+                  >
+                    Lost your device?{" "}
+                    <span className="underline underline-offset-4 decoration-2">
+                      Recover account
+                    </span>
+                  </button>
+                </div>
               )}
-
-              <div className="mt-8 lg:mt-12 text-center border-t border-slate-100 pt-6 lg:pt-8">
-                <button
-                  onClick={() => {
-                    setView("recovery");
-                    setMessage("");
-                    setIsError(false);
-                  }}
-                  className="text-xs sm:text-sm font-bold text-slate-400 hover:text-[#A51A21] uppercase tracking-wide transition-colors cursor-pointer"
-                >
-                  Lost your device?{" "}
-                  <span className="underline underline-offset-4 decoration-2">
-                    Recover account
-                  </span>
-                </button>
-              </div>
             </div>
           )}
 
@@ -523,7 +650,7 @@ export default function SmartStudentPortal() {
                     type="password"
                     placeholder="Enter 4-Digit PIN"
                     maxLength={4}
-                    className="w-full px-4 lg:px-5 py-3.5 lg:py-4 rounded-xl bg-slate-50 border border-slate-200 outline-none text-sm sm:text-base font-medium focus:bg-white focus:border-[#011B51] focus:ring-2 focus:ring-[#011B51]/20 transition-all tracking-[0.3em] shadow-sm"
+                    className="w-full px-4 lg:px-5 py-3.5 lg:py-4 rounded-xl bg-slate-50 border border-slate-200 outline-none text-sm sm:text-base font-medium focus:bg-[#011B51]/5 focus:border-[#011B51] focus:ring-2 focus:ring-[#011B51]/20 transition-all tracking-[0.3em] shadow-sm"
                     value={recoveryPin}
                     onChange={(e) => setRecoveryPin(e.target.value)}
                     required
@@ -533,7 +660,7 @@ export default function SmartStudentPortal() {
                 <button
                   type="submit"
                   disabled={isRegistering}
-                  className="w-full bg-[#A51A21] hover:bg-[#851319] text-white font-bold py-3.5 lg:py-4 rounded-xl mt-6 lg:mt-8 transition-all shadow-md hover:shadow-lg lg:hover:-translate-y-0.5 border-b-4 border-[#610a10] disabled:opacity-70 disabled:border-[#A51A21] disabled:transform-none text-xs sm:text-sm uppercase tracking-wider"
+                  className="w-full bg-[#A51A21] hover:bg-[#851319] text-white font-bold py-3.5 lg:py-4 rounded-xl mt-6 lg:mt-8 transition-all shadow-md hover:shadow-lg lg:hover:-translate-y-0.5 border-b-4 border-[#610a10] disabled:opacity-70 disabled:border-[#A51A21] disabled:transform-none text-xs sm:text-sm uppercase tracking-wider cursor-pointer"
                 >
                   {isRegistering
                     ? "Processing Request..."
@@ -548,7 +675,7 @@ export default function SmartStudentPortal() {
                     setMessage("");
                     setIsError(false);
                   }}
-                  className="text-xs sm:text-sm font-bold text-slate-400 hover:text-[#011B51] uppercase tracking-wide transition-colors"
+                  className="text-xs sm:text-sm font-bold text-slate-400 hover:text-[#011B51] uppercase tracking-wide transition-colors cursor-pointer"
                 >
                   &larr; Back to Registration
                 </button>
@@ -558,101 +685,242 @@ export default function SmartStudentPortal() {
 
           {view === "attendance" && (
             <div className="animate-in fade-in duration-500">
-              <div className="mb-8 lg:mb-10 text-center lg:text-left">
-                <span className="inline-block px-3 py-1 mb-7 rounded-full bg-[#011B51]/10 text-[#011B51] text-[11px] font-black uppercase tracking-widest border border-[#011B51]/20">
+              <div className="mb-6 text-center lg:text-left">
+                <span className="inline-block px-3.5 py-1 mb-4 rounded-full bg-[#011B51]/10 text-[#011B51] text-xs font-black uppercase tracking-widest border border-[#011B51]/20">
                   Student ID: {registeredId}
                 </span>
 
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#011B51] uppercase tracking-tight">
-                  Log Attendance
-                </h2>
-                <div className="w-12 lg:w-16 h-1 lg:h-1.5 bg-[#1e3585] mt-3 lg:mt-4 mb-2 lg:mb-3 rounded-full mx-auto lg:mx-0"></div>
-                <p className="text-slate-500 text-xs sm:text-sm font-semibold uppercase tracking-wide">
-                  Select your current facility.
-                </p>
+                <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 mb-6">
+                  <button
+                    type="button"
+                    onClick={() => setStudentTab("checkin")}
+                    className={`flex-1 py-2.5 rounded-lg text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer ${studentTab === "checkin"
+                        ? "bg-[#011B51] text-white shadow-md"
+                        : "text-slate-500 hover:text-[#011B51]"
+                      }`}
+                  >
+                    Log Attendance
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStudentTab("history");
+                      setCurrentPage(1);
+                      if (registeredId) fetchHistory(registeredId);
+                    }}
+                    className={`flex-1 py-2.5 rounded-lg text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer ${studentTab === "history"
+                        ? "bg-[#011B51] text-white shadow-md"
+                        : "text-slate-500 hover:text-[#011B51]"
+                      }`}
+                  >
+                    My History
+                  </button>
+                </div>
               </div>
 
-              <GeofenceGuard>
-                <form
-                  onSubmit={handleLogAttendance}
-                  className="space-y-4 lg:space-y-6"
-                >
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-center shadow-sm">
-                    <div className="flex items-center space-x-3 text-left">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 text-[#011B51]"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                          Local Standard Time
-                        </p>
-                        <p className="text-sm font-bold text-[#011B51]">
-                          {philippineTime || "Syncing clock..."}
-                        </p>
+              {studentTab === "checkin" ? (
+                <GeofenceGuard>
+                  <form
+                    onSubmit={handleLogAttendance}
+                    className="space-y-4 lg:space-y-6"
+                  >
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-center shadow-sm">
+                      <div className="flex items-center space-x-3 text-left">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-6 w-6 text-[#011B51]"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            Local Standard Time
+                          </p>
+                          <p className="text-sm font-bold text-[#011B51]">
+                            {philippineTime || "Syncing clock..."}
+                          </p>
+                        </div>
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] sm:text-xs font-bold text-[#011B51] uppercase tracking-wide mb-1.5 lg:mb-2 ml-1">
+                        Facility Selection
+                      </label>
+                      <select
+                        className="w-full px-4 lg:px-5 py-4 lg:py-5 rounded-xl bg-slate-50 border border-slate-200 outline-none cursor-pointer text-sm sm:text-base font-medium focus:bg-white focus:border-[#011B51] focus:ring-2 focus:ring-[#011B51]/20 transition-all shadow-sm appearance-none"
+                        value={selectedRoom}
+                        onChange={(e) => setSelectedRoom(e.target.value)}
+                        required
+                      >
+                        <option value="" disabled>
+                          Select your laboratory room...
+                        </option>
+                        {labRooms.map((room, index) => (
+                          <option key={index} value={room}>
+                            {room}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] sm:text-xs font-bold text-[#011B51] uppercase tracking-wide mb-1.5 lg:mb-2 ml-1">
+                        Room PIN
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={4}
+                        className="w-full px-4 lg:px-5 py-3.5 lg:py-4 rounded-xl bg-slate-50 border border-slate-200 outline-none text-center text-lg sm:text-xl font-mono font-bold tracking-[0.3em] focus:bg-white focus:border-[#011B51] focus:ring-2 focus:ring-[#011B51]/20 transition-all shadow-sm"
+                        value={roomPin}
+                        onChange={(e) =>
+                          setRoomPin(e.target.value.replace(/\D/g, ""))
+                        }
+                        placeholder="0000"
+                        required
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isLogging || labRooms.length === 0}
+                      className="w-full bg-[#011B51] hover:bg-[#022a7a] text-white font-bold py-3.5 lg:py-4 rounded-xl mt-6 lg:mt-8 transition-all shadow-md hover:shadow-lg lg:hover:-translate-y-0.5 border-b-4 border-[#A51A21] disabled:opacity-70 disabled:border-[#011B51] disabled:transform-none text-xs sm:text-sm uppercase tracking-wider cursor-pointer"
+                    >
+                      {isLogging
+                        ? "Verifying Keys..."
+                        : "Securely Log Attendance"}
+                    </button>
+                  </form>
+                </GeofenceGuard>
+              ) : (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-sm font-extrabold text-[#011B51] uppercase tracking-wide">
+                        Check-In History
+                      </h3>
+                      <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                        {processedLogs.length} Total
+                      </span>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        placeholder="Search course or room..."
+                        value={historySearch}
+                        onChange={(e) => {
+                          setHistorySearch(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-[#011B51] transition-all w-full sm:w-48"
+                      />
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[10px] sm:text-xs font-bold text-[#011B51] uppercase tracking-wide mb-1.5 lg:mb-2 ml-1">
-                      Facility Selection
-                    </label>
-                    <select
-                      className="w-full px-4 lg:px-5 py-4 lg:py-5 rounded-xl bg-slate-50 border border-slate-200 outline-none cursor-pointer text-sm sm:text-base font-medium focus:bg-white focus:border-[#011B51] focus:ring-2 focus:ring-[#011B51]/20 transition-all shadow-sm appearance-none"
-                      value={selectedRoom}
-                      onChange={(e) => setSelectedRoom(e.target.value)}
-                      required
-                    >
-                      <option value="" disabled>
-                        Select your laboratory room...
-                      </option>
-                      {labRooms.map((room, index) => (
-                        <option key={index} value={room}>
-                          {room}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  {isLoadingHistory ? (
+                    <div className="p-12 text-center text-slate-400 font-bold text-xs uppercase tracking-widest animate-pulse">
+                      Loading attendance records...
+                    </div>
+                  ) : processedLogs.length === 0 ? (
+                    <div className="p-8 bg-slate-50 border border-slate-200 rounded-xl text-center text-slate-500 font-medium text-xs">
+                      {historySearch ? "No logs match your search filter." : "No attendance logs recorded for this student ID."}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-slate-100 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+                        {paginatedLogs.map((log) => {
+                          const isLate = log.status === "LATE";
+                          const isManual = log.signature && log.signature.includes("OVERRIDE");
 
-                  <div>
-                    <label className="block text-[10px] sm:text-xs font-bold text-[#011B51] uppercase tracking-wide mb-1.5 lg:mb-2 ml-1">
-                      Room PIN
-                    </label>
-                    <input
-                      type="text"
-                      maxLength={4}
-                      className="w-full px-4 lg:px-5 py-3.5 lg:py-4 rounded-xl bg-slate-50 border border-slate-200 outline-none text-center text-lg sm:text-xl font-mono font-bold tracking-[0.3em] focus:bg-white focus:border-[#011B51] focus:ring-2 focus:ring-[#011B51]/20 transition-all shadow-sm"
-                      value={roomPin}
-                      onChange={(e) =>
-                        setRoomPin(e.target.value.replace(/\D/g, ""))
-                      }
-                      placeholder="0000"
-                      required
-                    />
-                  </div>
+                          return (
+                            <div
+                              key={log.id}
+                              className="p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-slate-300 transition-all hover:shadow-sm"
+                            >
+                              <div className="flex justify-between items-start mb-1">
+                                <span className="font-bold text-sm text-[#011B51]">
+                                  {log.schedule?.course_code || "CLASS SESSION"} (Sec {log.schedule?.section || "N/A"})
+                                </span>
+                                <span
+                                  className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider border ${isLate
+                                      ? "bg-amber-50 text-amber-800 border-amber-200"
+                                      : "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                    }`}
+                                >
+                                  {isLate ? "LATE" : "ON TIME"}
+                                </span>
+                              </div>
 
-                  <button
-                    type="submit"
-                    disabled={isLogging || labRooms.length === 0}
-                    className="w-full bg-[#011B51] hover:bg-[#022a7a] text-white font-bold py-3.5 lg:py-4 rounded-xl mt-6 lg:mt-8 transition-all shadow-md hover:shadow-lg lg:hover:-translate-y-0.5 border-b-4 border-[#A51A21] disabled:opacity-70 disabled:border-[#011B51] disabled:transform-none text-xs sm:text-sm uppercase tracking-wider cursor-pointer"
-                  >
-                    {isLogging
-                      ? "Verifying Keys..."
-                      : "Securely Log Attendance"}
-                  </button>
-                </form>
-              </GeofenceGuard>
+                              <p className="text-xs font-medium text-slate-600">
+                                Facility: {log.schedule?.lab_room || "Laboratory"}
+                              </p>
+
+                              {isManual && (
+                                <span className="inline-block mt-1 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200">
+                                  Manual Override
+                                </span>
+                              )}
+
+                              <p className="text-[11px] font-medium text-slate-400 mt-2">
+                                {new Date(log.timestamp).toLocaleString("en-US", {
+                                  weekday: "short",
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Pagination Controls */}
+                      {totalPages > 1 && (
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs font-bold text-slate-500">
+                          <button
+                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent transition-colors cursor-pointer"
+                          >
+                            Previous
+                          </button>
+                          <span>
+                            Page {currentPage} of {totalPages}
+                          </span>
+                          <button
+                            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent transition-colors cursor-pointer"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+                <button
+                  type="button"
+                  onClick={() => setShowDeauthModal(true)}
+                  className="text-xs font-bold text-slate-400 hover:text-rose-600 uppercase tracking-wider transition-colors cursor-pointer underline underline-offset-4"
+                >
+                  Deauthorize This Device
+                </button>
+              </div>
             </div>
           )}
 
@@ -665,6 +933,56 @@ export default function SmartStudentPortal() {
           )}
         </div>
       </div>
+
+      {/* Custom Deauthorization Confirmation Modal */}
+      {showDeauthModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center space-y-4">
+            <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-black text-[#011B51] uppercase tracking-tight">
+                Deauthorize Device?
+              </h3>
+              <p className="text-xs text-slate-500 font-medium mt-2 leading-relaxed">
+                This action deletes your local cryptographic security keys. You will need to register or perform account recovery to check in again.
+              </p>
+            </div>
+
+            <div className="flex space-x-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDeauthModal(false)}
+                className="flex-1 py-3 px-4 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs uppercase tracking-wider hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={executeDeauthorization}
+                className="flex-1 py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs uppercase tracking-wider transition-colors shadow-md cursor-pointer"
+              >
+                Deauthorize
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
