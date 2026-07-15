@@ -242,6 +242,7 @@ export async function manuallyAdmitStudent(data: {
         createdAt: newLog.timestamp.toISOString(),
         signature: newLog.signature, // ✅ FIXED: Included signature in payload
         isManual: true,              // ✅ FIXED: Included flag in payload
+        scheduleId: schedule.id,
       });
     } catch (pusherError) {
       console.error("[PUSHER ERROR] Failed real-time override broadcast:", pusherError);
