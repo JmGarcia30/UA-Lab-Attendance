@@ -16,7 +16,7 @@
 
 **UA LabSign** is a centralized, hardware-bound laboratory attendance tracking ecosystem engineered for the University of Assumption. Traditional paper-based logs and manual spreadsheets are vulnerable to proxy attendance, physical forgery, and data tampering. UA LabSign mitigates these security risks by implementing a **Zero-Trust Infrastructure** that combines asymmetric client-side digital signatures with instant geographic boundary verification.
 
-The platform consists of a centralized Web Portal and an official companion [Android Application](https://github.com/iyawnnn/UA-Lab-Attendance-Mobile). Every check-in request is cryptographically signed by an isolated key pair locked directly inside the student's authorized terminal. The system verifies physical presence strictly at the moment of submission, providing unalterable audit trails while preserving user privacy outside check-in windows.
+The platform consists of a centralized Web Portal and an official companion [Android Application](https://github.com/JmGarcia30/UA-Lab-Attendance-Mobile.git). Every check-in request is cryptographically signed by an isolated key pair locked directly inside the student's authorized terminal. The system verifies physical presence strictly at the moment of submission, providing unalterable audit trails while preserving user privacy outside check-in windows.
 
 
 ## Associated Repositories
