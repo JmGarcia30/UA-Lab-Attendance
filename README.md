@@ -16,13 +16,13 @@
 
 **UA LabSign** is a centralized, hardware-bound laboratory attendance tracking ecosystem engineered for the University of Assumption. Traditional paper-based logs and manual spreadsheets are vulnerable to proxy attendance, physical forgery, and data tampering. UA LabSign mitigates these security risks by implementing a **Zero-Trust Infrastructure** that combines asymmetric client-side digital signatures with instant geographic boundary verification.
 
-The platform consists of a centralized Web Portal and an official companion [Android Application](https://github.com/JmGarcia30/UA-Lab-Attendance-Mobile). Every check-in request is cryptographically signed by an isolated key pair locked directly inside the student's authorized terminal. The system verifies physical presence strictly at the moment of submission, providing unalterable audit trails while preserving user privacy outside check-in windows.
+The platform consists of a centralized Web Portal and an official companion [Android Application](https://github.com/iyawnnn/UA-Lab-Attendance-Mobile). Every check-in request is cryptographically signed by an isolated key pair locked directly inside the student's authorized terminal. The system verifies physical presence strictly at the moment of submission, providing unalterable audit trails while preserving user privacy outside check-in windows.
 
 
 ## Associated Repositories
 
 * **Web Portal & Backend Infrastructure:** Current Repository
-* **Official Companion Android Application:** [UA-Lab-Attendance-Mobile](https://github.com/JmGarcia30/UA-Lab-Attendance-Mobile)
+* **Official Companion Android Application:** [UA-Lab-Attendance-Mobile](https://github.com/iyawnnn/UA-Lab-Attendance-Mobile)
 
 
 ## Core Security Architecture
@@ -72,8 +72,14 @@ UA LabSign utilizes a defense-in-depth security model to guarantee data integrit
 
 * **Framework:** Next.js (App Router, React)
 * **Language:** TypeScript
-* **Mobile Client:** Native Android Companion App ([GitHub Repository](https://github.com/JmGarcia30/UA-Lab-Attendance-Mobile))
+* **Mobile Client:** Native Android Companion App ([GitHub Repository](https://github.com/iyawnnn/UA-Lab-Attendance-Mobile))
 * **Styling:** Tailwind CSS, Lucide Icons, Framer Motion
 * **Client Cryptography & Storage:** Web Crypto API (ECDSA P-256), `idb-keyval` (IndexedDB wrapper)
 * **Backend & Security:** Next.js Server Actions, Node.js `crypto` module, `bcrypt`
 * **Database & ORM:** Cloud-hosted serverless PostgreSQL (deployed via Neon), managed via Prisma ORM
+
+---
+
+Copyright (c) 2026 University of Assumption.
+
+All Rights Reserved. Unauthorized copying, modification, or distribution of this software is strictly prohibited.
