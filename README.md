@@ -1,7 +1,7 @@
 # UA LabSign
 
 > **Zero-Trust Laboratory Attendance Tracking System**  
-> **University of Assumption | College of Information Technology**
+> **University of the Assumption | College of Information Technology**
 
 ![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
@@ -16,13 +16,13 @@
 
 **UA LabSign** is a centralized, hardware-bound laboratory attendance tracking ecosystem engineered for the University of Assumption. Traditional paper-based logs and manual spreadsheets are vulnerable to proxy attendance, physical forgery, and data tampering. UA LabSign mitigates these security risks by implementing a **Zero-Trust Infrastructure** that combines asymmetric client-side digital signatures with instant geographic boundary verification.
 
-The platform consists of a centralized Web Portal and an official companion [Android Application](https://github.com/iyawnnn/UA-Lab-Attendance-Mobile). Every check-in request is cryptographically signed by an isolated key pair locked directly inside the student's authorized terminal. The system verifies physical presence strictly at the moment of submission, providing unalterable audit trails while preserving user privacy outside check-in windows.
+The platform consists of a centralized Web Portal and an official companion [Android Application]https://github.com/JmGarcia30/UA-Lab-Attendance-Mobile). Every check-in request is cryptographically signed by an isolated key pair locked directly inside the student's authorized terminal. The system verifies physical presence strictly at the moment of submission, providing unalterable audit trails while preserving user privacy outside check-in windows.
 
 
 ## Associated Repositories
 
 * **Web Portal & Backend Infrastructure:** Current Repository
-* **Official Companion Android Application:** [UA-Lab-Attendance-Mobile](https://github.com/iyawnnn/UA-Lab-Attendance-Mobile)
+* **Official Companion Android Application:** [UA-Lab-Attendance-Mobile](https://github.com/JmGarcia30/UA-Lab-Attendance-Mobile)
 
 
 ## Core Security Architecture
@@ -40,7 +40,7 @@ UA LabSign utilizes a defense-in-depth security model to guarantee data integrit
 * Eliminates continuous background location tracking, protecting student location privacy outside active check-in moments.
 
 ### 3. Time-Sensitive Session PINs
-* Instructors generate dynamic 4-digit room PINs configured with active durations ranging from 1 to 15 minutes.
+* Instructors generate dynamic 6-digit room PINs configured with active durations ranging from 1 to 15 minutes.
 * Submissions attempted outside the active session timer or from unverified locations are automatically rejected.
 
 ### 4. Credential & Data Protection
@@ -58,7 +58,7 @@ UA LabSign utilizes a defense-in-depth security model to guarantee data integrit
 * **Attendance Ledger:** Searchable historical check-in records with a "Deauthorize This Device" action.
 
 ### Faculty Dashboard
-* **Session Initialization:** Selects scheduled classes to generate time-sensitive, dynamic 4-digit room PINs.
+* **Session Initialization:** Selects scheduled classes to generate time-sensitive, dynamic 6-digit room PINs.
 * **Live Session Oversight:** Real-time visibility into active check-in logs, timestamps, and student statuses.
 * **Manual Overrides & Reporting:** Allows manual attendance adjustment for edge cases and exports structured class reports.
 
@@ -72,7 +72,7 @@ UA LabSign utilizes a defense-in-depth security model to guarantee data integrit
 
 * **Framework:** Next.js (App Router, React)
 * **Language:** TypeScript
-* **Mobile Client:** Native Android Companion App ([GitHub Repository](https://github.com/iyawnnn/UA-Lab-Attendance-Mobile))
+* **Mobile Client:** Native Android Companion App ([GitHub Repository](https://github.com/JmGarcia30/UA-Lab-Attendance-Mobile))
 * **Styling:** Tailwind CSS, Lucide Icons, Framer Motion
 * **Client Cryptography & Storage:** Web Crypto API (ECDSA P-256), `idb-keyval` (IndexedDB wrapper)
 * **Backend & Security:** Next.js Server Actions, Node.js `crypto` module, `bcrypt`
@@ -80,6 +80,6 @@ UA LabSign utilizes a defense-in-depth security model to guarantee data integrit
 
 ---
 
-Copyright (c) 2026 University of Assumption.
+Copyright (c) 2026 University of the Assumption.
 
 All Rights Reserved. Unauthorized copying, modification, or distribution of this software is strictly prohibited.
